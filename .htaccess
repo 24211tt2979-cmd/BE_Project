@@ -1,0 +1,25 @@
+# NHK Mobile - Security Configuration
+
+# Tắt directory listing (không cho xem danh sách file)
+Options -Indexes
+
+# Ẩn thông tin server
+ServerSignature Off
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Chặn truy cập trực tiếp vào file .env, .git, composer, v.v.
+<FilesMatch "^(\.env|\.git|composer\.json|composer\.lock|package\.json|package-lock\.json|deploy\.bat|nixpacks\.toml|railpack\.json|.*\.md|.*\.sql|.*\.log)$">
+    Require all denied
+</FilesMatch>
+
+# Chặn truy cập các file PHP backup/debug
+<FilesMatch "\.(bak|backup|old|tmp|temp|swp|orig)$">
+    Require all denied
+</FilesMatch>

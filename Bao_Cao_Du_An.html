@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Báo cáo Dự án NHK Mobile</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 900px; margin: 0 auto; padding: 40px; background-color: #f4f7f6; }
+        .container { background: #fff; padding: 50px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .tip { background: #e7f3fe; border-left: 6px solid #2196F3; padding: 15px; margin-bottom: 30px; }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #3498db; padding-bottom: 10px; text-transform: uppercase; }
+        h2 { color: #2980b9; border-left: 5px solid #2980b9; padding-left: 15px; margin-top: 30px; }
+        h3 { color: #16a085; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f2f2f2; color: #2c3e50; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        code { background-color: #f8f8f8; padding: 2px 5px; border-radius: 4px; color: #e74c3c; font-family: Consolas, monospace; }
+        .folder-tree { background: #2c3e50; color: #ecf0f1; padding: 20px; border-radius: 5px; font-family: 'Courier New', Courier, monospace; }
+        .footer { text-align: center; margin-top: 50px; color: #7f8c8d; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="tip">
+        <strong>💡 Mẹo chuyển sang Word:</strong> 
+        Mở file này bằng trình duyệt, nhấn <code>Ctrl + A</code> để chọn tất cả, sau đó <code>Ctrl + C</code> để copy và <code>Ctrl + V</code> vào Microsoft Word. Bạn sẽ có một bản Word đẹp mắt!
+    </div>
+
+    <h1>BÁO CÁO DỰ ÁN WEBSITE BÁN HÀNG NHK MOBILE</h1>
+
+    <h2>1. Tổng quan dự án</h2>
+    <p><strong>Tên dự án:</strong> NHK Mobile - Hệ thống thương mại điện tử chuyên doanh thiết bị di động.</p>
+    <p><strong>Mục tiêu:</strong> Xây dựng nền tảng mua sắm trực tuyến hiện đại, hỗ trợ người dùng tìm kiếm, đặt hàng và quản trị viên quản lý kho hàng hiệu quả.</p>
+    <p><strong>Công nghệ sử dụng:</strong></p>
+    <ul>
+        <li><strong>Ngôn ngữ lập trình:</strong> PHP 8.x</li>
+        <li><strong>Cơ sở dữ liệu:</strong> MySQL (MariaDB)</li>
+        <li><strong>Giao diện:</strong> HTML5, CSS3, JavaScript (Vanilla JS)</li>
+        <li><strong>Môi trường phát triển:</strong> WAMP Server</li>
+    </ul>
+
+    <h2>2. Cấu trúc thư mục dự án</h2>
+    <div class="folder-tree">
+        /BE_Project-main<br>
+        ├── /admin           # Giao diện và logic cho quản trị viên<br>
+        ├── /api             # Các API xử lý dữ liệu (JSON/AJAX)<br>
+        ├── /assets          # Tài nguyên tĩnh (CSS, JS, Images)<br>
+        ├── /includes        # File dùng chung (Cấu hình DB, Header, Footer)<br>
+        ├── /logs            # Nhật ký hoạt động hệ thống<br>
+        ├── index.php        # Trang chủ hệ thống<br>
+        ├── login.php        # Trang đăng nhập<br>
+        ├── register.php     # Trang đăng ký thành viên<br>
+        └── database.sql     # File mã nguồn tạo cơ sở dữ liệu
+    </div>
+
+    <h2>3. Thiết kế Cơ sở dữ liệu</h2>
+    <p>Hệ thống sử dụng cơ sở dữ liệu quan hệ với 8 bảng cốt lõi:</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Tên Bảng</th>
+                <th>Chức năng chính</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>admins</code></td>
+                <td>Lưu thông tin tài khoản quản trị viên.</td>
+            </tr>
+            <tr>
+                <td><code>users</code></td>
+                <td>Lưu thông tin khách hàng (Họ tên, email, SĐT, địa chỉ).</td>
+            </tr>
+            <tr>
+                <td><code>products</code></td>
+                <td>Danh mục sản phẩm, giá, số lượng tồn kho, mô tả và thông số kỹ thuật.</td>
+            </tr>
+            <tr>
+                <td><code>orders</code></td>
+                <td>Thông tin đơn hàng (Tổng tiền, trạng thái, phương thức thanh toán).</td>
+            </tr>
+            <tr>
+                <td><code>order_items</code></td>
+                <td>Chi tiết từng sản phẩm trong một đơn hàng.</td>
+            </tr>
+            <tr>
+                <td><code>cart_items</code></td>
+                <td>Lưu trữ tạm thời các sản phẩm khách hàng đã thêm vào giỏ.</td>
+            </tr>
+            <tr>
+                <td><code>reviews</code></td>
+                <td>Lưu đánh giá và bình luận của khách hàng về sản phẩm.</td>
+            </tr>
+            <tr>
+                <td><code>wishlists</code></td>
+                <td>Danh sách sản phẩm yêu thích của người dùng.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>4. Các tính năng nổi bật</h2>
+    <h3>4.1. Phân hệ Khách hàng (Client)</h3>
+    <ul>
+        <li><strong>Tìm kiếm thông minh:</strong> Tìm kiếm sản phẩm theo tên và danh mục thời gian thực.</li>
+        <li><strong>Giỏ hàng & Thanh toán:</strong> Hỗ trợ quản lý số lượng sản phẩm và đặt hàng nhanh (COD hoặc Trả góp).</li>
+        <li><strong>Đánh giá sản phẩm:</strong> Hệ thống rating 5 sao và bình luận có hình ảnh kèm theo.</li>
+        <li><strong>Quản lý trang cá nhân:</strong> Theo dõi trạng thái đơn hàng và cập nhật thông tin liên lạc.</li>
+    </ul>
+
+    <h3>4.2. Phân hệ Quản trị (Admin)</h3>
+    <ul>
+        <li><strong>Quản lý kho hàng:</strong> Thêm, sửa, xóa sản phẩm và cập nhật số lượng tồn.</li>
+        <li><strong>Quản lý đơn hàng:</strong> Duyệt đơn, cập nhật trạng thái vận chuyển.</li>
+        <li><strong>Bảo mật:</strong> Hệ thống phân quyền chặt chẽ giữa User và Admin.</li>
+    </ul>
+
+    <h2>5. Hướng dẫn cài đặt hệ thống</h2>
+    <p>Để chạy dự án trên máy cục bộ, thực hiện các bước sau:</p>
+    <ol>
+        <li><strong>Bước 1:</strong> Sao chép mã nguồn vào thư mục <code>www</code> của WAMP.</li>
+        <li><strong>Bước 2:</strong> Tạo database mới trong phpMyAdmin (ví dụ: <code>nhk_mobile</code>).</li>
+        <li><strong>Bước 3:</strong> Import file <code>database_minimal.sql</code> vào database vừa tạo.</li>
+        <li><strong>Bước 4:</strong> Cấu hình thông tin kết nối trong file <code>includes/db.php</code>.</li>
+        <li><strong>Bước 5:</strong> Truy cập địa chỉ <code>localhost/BE_Project-main</code> trên trình duyệt.</li>
+    </ol>
+
+    <div class="footer">
+        &copy; 2026 NHK Mobile Project - Tài liệu được tạo tự động bởi Antigravity AI
+    </div>
+</div>
+
+</body>
+</html>

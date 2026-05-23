@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <!-- Outer Square Border (Thinner) -->
+    <rect x="10" y="10" width="80" height="80" fill="none" stroke="#000" stroke-width="4" />
+    <!-- NHK Text (Thinner) -->
+    <text x="50" y="60" font-family="'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="22" font-weight="500" fill="#000" text-anchor="middle" letter-spacing="1">NHK</text>
+</svg>

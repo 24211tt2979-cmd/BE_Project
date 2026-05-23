@@ -1,0 +1,459 @@
+/* ============================================
+   HERO / BANNER SECTION - ECOMMERCE STYLE
+   Inspired by Thế Giới Di Động, FPT Shop
+   ============================================ */
+
+/* ── Reset font issues for hero section ── */
+.hero-new *,
+.hero-new h1,
+.hero-new h2,
+.hero-new h3,
+.hero-new h4,
+.hero-new p,
+.hero-new a,
+.hero-new span {
+    letter-spacing: normal;
+    -webkit-text-fill-color: unset;
+}
+
+/* ── Hero wrapper - override global section padding ── */
+.hero-new {
+    padding: 80px 0 0 !important;
+    background: #f0f2f5;
+    min-height: auto;
+    display: block;
+    overflow: visible;
+}
+
+/* Category section override */
+.category-section {
+    padding: 12px 0 !important;
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+/* ── Main Banner Grid ── */
+.banner-grid-main {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    grid-template-rows: auto;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+/* ── Banner Cards ── */
+.banner-card {
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.banner-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+
+/* Main big banner */
+.banner-card.banner-main {
+    height: 340px;
+    background: linear-gradient(120deg, #0f172a 0%, #1e3a5f 60%, #1a56db 100%);
+    padding: 36px 40px;
+}
+
+.banner-card.banner-main .banner-content {
+    position: relative;
+    z-index: 2;
+    max-width: 55%;
+}
+
+.banner-card.banner-main .banner-kicker {
+    display: inline-block;
+    background: #ef4444;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 4px;
+    margin-bottom: 14px;
+}
+
+.banner-card.banner-main .banner-title {
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.2;
+    margin-bottom: 10px;
+    letter-spacing: -0.02em;
+    -webkit-text-fill-color: #ffffff;
+}
+
+.banner-card.banner-main .banner-sub {
+    font-size: 15px;
+    color: rgba(255,255,255,0.75);
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.banner-card.banner-main .banner-price {
+    font-size: 22px;
+    font-weight: 800;
+    color: #fbbf24;
+    margin-bottom: 20px;
+    -webkit-text-fill-color: #fbbf24;
+}
+
+.banner-card.banner-main .banner-price small {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.6);
+    margin-left: 8px;
+    text-decoration: line-through;
+    -webkit-text-fill-color: rgba(255,255,255,0.6);
+}
+
+.banner-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 11px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.banner-btn.btn-white {
+    background: #fff;
+    color: #1e3a5f;
+}
+.banner-btn.btn-white:hover {
+    background: #f1f5f9;
+    transform: translateX(4px);
+}
+
+.banner-btn.btn-red {
+    background: #ef4444;
+    color: #fff;
+}
+.banner-btn.btn-red:hover {
+    background: #dc2626;
+    transform: translateX(4px);
+}
+
+.banner-btn.btn-orange {
+    background: #f97316;
+    color: #fff;
+}
+.banner-btn.btn-orange:hover {
+    background: #ea580c;
+    transform: translateX(4px);
+}
+
+/* Banner phone image */
+.banner-card.banner-main .banner-img {
+    position: absolute;
+    right: -10px;
+    bottom: 0;
+    height: 110%;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 30px rgba(0,0,0,0.4));
+    z-index: 1;
+}
+
+/* ── Right side banner column ── */
+.banner-side-col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.banner-card.banner-side {
+    height: 105px;
+    padding: 18px 20px;
+    flex: 1;
+}
+
+.banner-card.banner-side .banner-title {
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.3;
+    margin-bottom: 4px;
+    -webkit-text-fill-color: #fff;
+}
+
+.banner-card.banner-side .banner-sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.8);
+}
+
+.banner-card.banner-side .banner-img {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0.9;
+}
+
+/* Side banner color themes */
+.banner-side-1 {
+    background: linear-gradient(120deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+.banner-side-2 {
+    background: linear-gradient(120deg, #1f1235 0%, #3d0066 100%);
+}
+.banner-side-3 {
+    background: linear-gradient(120deg, #1a2e1a 0%, #0d3b0d 100%);
+}
+
+/* ── Second row - 3 mini banners ── */
+.banner-grid-sub {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.banner-card.banner-promo {
+    height: 110px;
+    padding: 16px 20px;
+}
+
+/* Promo banner themes */
+.banner-promo-1 {
+    background: linear-gradient(120deg, #7c2d12 0%, #c2410c 100%);
+}
+.banner-promo-2 {
+    background: linear-gradient(120deg, #064e3b 0%, #059669 100%);
+}
+.banner-promo-3 {
+    background: linear-gradient(120deg, #1e1b4b 0%, #4338ca 100%);
+}
+
+.banner-card.banner-promo .banner-icon {
+    font-size: 28px;
+    color: rgba(255,255,255,0.3);
+    position: absolute;
+    right: 16px;
+    bottom: 12px;
+}
+
+.banner-card.banner-promo .banner-title {
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.3;
+    margin-bottom: 4px;
+    -webkit-text-fill-color: #fff;
+}
+
+.banner-card.banner-promo .banner-highlight {
+    font-size: 20px;
+    font-weight: 800;
+    color: #fde68a;
+    -webkit-text-fill-color: #fde68a;
+}
+
+/* ── Third row - Flash sale + brand banners ── */
+.banner-grid-flash {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 0;
+}
+
+.banner-card.banner-flash {
+    height: 100px;
+    padding: 14px 20px;
+}
+
+.banner-flash-main {
+    background: linear-gradient(120deg, #7f1d1d 0%, #b91c1c 100%);
+}
+.banner-flash-2 {
+    background: linear-gradient(120deg, #0c4a6e 0%, #0284c7 100%);
+}
+.banner-flash-3 {
+    background: linear-gradient(120deg, #3b0764 0%, #7c3aed 100%);
+}
+
+.flash-sale-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,0,0,0.2);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+}
+
+.flash-sale-label i { color: #fbbf24; }
+
+.banner-card.banner-flash .banner-title {
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.25;
+    -webkit-text-fill-color: #fff;
+}
+
+.banner-card.banner-flash .banner-sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.75);
+    margin-top: 3px;
+}
+
+.banner-card.banner-flash .banner-img {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 80%;
+    object-fit: contain;
+}
+
+/* ── Category Strip ── */
+.category-section {
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.category-pill-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    background: #f3f4f6;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.category-pill-sm:hover {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    color: #2563eb;
+    transform: translateY(-1px);
+}
+
+.category-pill-sm i {
+    font-size: 15px;
+}
+
+/* ── Section Title Box ── */
+.section-title-box {
+    margin-bottom: 28px;
+}
+
+.section-subtitle {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--primary);
+    margin-bottom: 8px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 992px) {
+    .hero-new {
+        padding: 72px 0 0;
+    }
+
+    .banner-grid-main {
+        grid-template-columns: 1fr;
+    }
+
+    .banner-side-col {
+        flex-direction: row;
+    }
+
+    .banner-card.banner-side {
+        height: 90px;
+    }
+    .banner-card.banner-side .banner-title {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 768px) {
+    .banner-card.banner-main {
+        height: 260px;
+        padding: 24px;
+    }
+
+    .banner-card.banner-main .banner-title {
+        font-size: 24px;
+    }
+
+    .banner-card.banner-main .banner-content {
+        max-width: 65%;
+    }
+
+    .banner-grid-sub {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .banner-grid-flash {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .banner-grid-flash > :first-child {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 576px) {
+    .banner-card.banner-main {
+        height: 220px;
+        padding: 20px;
+    }
+
+    .banner-card.banner-main .banner-title {
+        font-size: 20px;
+    }
+
+    .banner-side-col {
+        display: none;
+    }
+
+    .banner-grid-sub {
+        grid-template-columns: 1fr;
+    }
+
+    .banner-card.banner-promo {
+        height: 90px;
+    }
+
+    .banner-grid-flash {
+        grid-template-columns: 1fr;
+    }
+
+    .banner-grid-flash > :first-child {
+        grid-column: span 1;
+    }
+}
