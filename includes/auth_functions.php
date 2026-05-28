@@ -12,8 +12,9 @@
 
 // Đảm bảo session luôn được khởi tạo với cấu hình bảo mật cao
 if (session_status() === PHP_SESSION_NONE) {
-    // Cấu hình session.save_path: Chỉ dùng /tmp trên Linux (Render), không dùng trên Windows (WAMP)
-    if (DIRECTORY_SEPARATOR === '/') {
+    // Chỉ ghi đè session.save_path nếu đường dẫn mặc định không thể ghi được
+    $defaultPath = session_save_path();
+    if (DIRECTORY_SEPARATOR === '/' && (empty($defaultPath) || !is_writable($defaultPath))) {
         ini_set('session.save_path', '/tmp');
     }
     ini_set('session.gc_maxlifetime', 604800);
@@ -21,13 +22,18 @@ if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.use_only_cookies', 1);
     ini_set('session.cookie_httponly', 1);
 
+    // Hỗ trợ nhận diện HTTPS đằng sau các Proxy ngược (Railway, Render, Cloudflare)
+    $isSecure = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') 
+        || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+        || (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on');
+
     session_set_cookie_params([
         'lifetime' => 604800,
         'path' => '/',
         'domain' => '',
-        'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+        'secure' => $isSecure,
         'httponly' => true,
-        'samesite' => 'Lax' // Thay đổi từ Strict sang Lax cho redirect
+        'samesite' => 'Lax'
     ]);
     session_start();
 
