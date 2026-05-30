@@ -9,6 +9,7 @@
  * Version: 2.2
  * Date: 2026-04-08
  */
+$footerSettings = isset($pdo) ? get_system_settings($pdo) : [];
 ?>
 <footer class="footer-new bg-light mt-5 border-top">
         <div class="container-wide py-5">

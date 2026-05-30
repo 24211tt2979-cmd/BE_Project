@@ -11,6 +11,30 @@ header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 header("Content-Type: application/json; charset=UTF-8");
 
+$hasVerifiedPurchase = false;
+try {
+    $colStmt = $pdo->query("SHOW COLUMNS FROM reviews LIKE 'verified_purchase'");
+    $hasVerifiedPurchase = (bool)$colStmt->fetch();
+    if (!$hasVerifiedPurchase) {
+        $pdo->exec("ALTER TABLE reviews ADD COLUMN verified_purchase INT DEFAULT 0");
+        $hasVerifiedPurchase = true;
+    }
+} catch (PDOException $e) {
+    $hasVerifiedPurchase = false;
+}
+
+$hasReviewImage = false;
+try {
+    $colStmt = $pdo->query("SHOW COLUMNS FROM reviews LIKE 'image'");
+    $hasReviewImage = (bool)$colStmt->fetch();
+    if (!$hasReviewImage) {
+        $pdo->exec("ALTER TABLE reviews ADD COLUMN image VARCHAR(255)");
+        $hasReviewImage = true;
+    }
+} catch (PDOException $e) {
+    $hasReviewImage = false;
+}
+
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'OPTIONS') {
@@ -44,9 +68,11 @@ if ($method === 'GET') {
         $stmtMeta->execute([$product_id]);
         $meta = $stmtMeta->fetch();
 
+        $verifiedSelect = $hasVerifiedPurchase ? "r.verified_purchase" : "0 AS verified_purchase";
+        $imageSelect = $hasReviewImage ? "r.image" : "NULL AS image";
         $stmt = $pdo->prepare("
             SELECT r.id, r.rating, r.title, r.content, r.created_at,
-                   r.reviewer_name, r.reviewer_email, r.verified_purchase, r.image
+                   r.reviewer_name, r.reviewer_email, $verifiedSelect, $imageSelect
             FROM reviews r
             WHERE r.product_id = ?
             ORDER BY r.created_at DESC
@@ -148,11 +174,31 @@ if ($method === 'POST') {
         }
 
         // MYSQL SỬ DỤNG lastInsertId()
-        $stmt = $pdo->prepare("
-            INSERT INTO reviews (product_id, user_id, reviewer_name, reviewer_email, rating, title, content, verified_purchase, image)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        $stmt->execute([$product_id, $user_id_val, $reviewer_name, $reviewer_email, $rating, $title, $content, $verified, $imageFilename]);
+        if ($hasVerifiedPurchase && $hasReviewImage) {
+            $stmt = $pdo->prepare("
+                INSERT INTO reviews (product_id, user_id, reviewer_name, reviewer_email, rating, title, content, verified_purchase, image)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([$product_id, $user_id_val, $reviewer_name, $reviewer_email, $rating, $title, $content, $verified, $imageFilename]);
+        } elseif ($hasVerifiedPurchase) {
+            $stmt = $pdo->prepare("
+                INSERT INTO reviews (product_id, user_id, reviewer_name, reviewer_email, rating, title, content, verified_purchase)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([$product_id, $user_id_val, $reviewer_name, $reviewer_email, $rating, $title, $content, $verified]);
+        } elseif ($hasReviewImage) {
+            $stmt = $pdo->prepare("
+                INSERT INTO reviews (product_id, user_id, reviewer_name, reviewer_email, rating, title, content, image)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([$product_id, $user_id_val, $reviewer_name, $reviewer_email, $rating, $title, $content, $imageFilename]);
+        } else {
+            $stmt = $pdo->prepare("
+                INSERT INTO reviews (product_id, user_id, reviewer_name, reviewer_email, rating, title, content)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([$product_id, $user_id_val, $reviewer_name, $reviewer_email, $rating, $title, $content]);
+        }
         $newId = $pdo->lastInsertId();
 
         // Cập nhật rating trung bình cho sản phẩm

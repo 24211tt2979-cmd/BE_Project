@@ -54,6 +54,7 @@ if (isset($_POST['place_order'])) {
     $name    = trim($_POST['full_name'] ?? '');
     $phone   = trim($_POST['phone'] ?? '');
     $address = trim($_POST['address'] ?? '') ?: 'Tại cửa hàng';  // Fallback khi rỗng
+    $customerEmail = trim($_POST['customer_email'] ?? '');
     $payment = $_POST['payment_method'] ?? 'COD';
     $userId  = get_logged_in_user_id(); // null nếu là admin
     // Cast boolean đúng cho MySQL (0 hoặc 1)
@@ -97,6 +98,14 @@ if (isset($_POST['place_order'])) {
             $_SESSION['last_order_phone'] = $phone;
             
             // Sau khi lưu đơn thành công, xóa sạch giỏ hàng trong Session và Database
+            if ($customerEmail && is_valid_email($customerEmail)) {
+                $mailBody = "<h2>NHK Mobile da nhan don hang #$orderId</h2>"
+                    . "<p>Cam on " . htmlspecialchars($name) . " da dat hang.</p>"
+                    . "<p>Tong tien: <strong>" . number_format($total, 0, ',', '.') . " VND</strong></p>"
+                    . "<p>Trang thai hien tai: Cho duyet. Cua hang se lien he xac nhan som.</p>";
+                send_store_mail($customerEmail, "NHK Mobile - Xac nhan don hang #$orderId", $mailBody, $pdo);
+            }
+
             unset($_SESSION['cart']);
             unset($_SESSION['is_installment']); // Xóa flag trả góp sau khi đặt hàng
             
@@ -241,7 +250,7 @@ include 'includes/header.php';
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">Địa chỉ Email (Không bắt buộc)</label>
-                                    <input type="email" class="form-control rounded-3 border-0 bg-light p-3" placeholder="email@example.com" value="<?php echo htmlspecialchars($userProfile['email'] ?? ''); ?>">
+                                    <input type="email" name="customer_email" class="form-control rounded-3 border-0 bg-light p-3" placeholder="email@example.com" value="<?php echo htmlspecialchars($userProfile['email'] ?? ''); ?>">
                                 </div>
                                 <div class="col-md-12">
                                     <label class="form-label small fw-bold">Địa chỉ giao hàng</label>

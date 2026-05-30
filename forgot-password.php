@@ -56,6 +56,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $step === 'request') {
             $success = "Yêu cầu đặt lại mật khẩu đã được tạo!";
             $success .= "<br><small class='text-muted'>Vui lòng truy cập: <a href='{$resetUrl}'>Đặt lại mật khẩu</a></small>";
             
+            $mailBody = "
+                <h2>Yeu cau dat lai mat khau</h2>
+                <p>Xin chao " . htmlspecialchars($user['fullname']) . ",</p>
+                <p>Ban vua yeu cau dat lai mat khau tai NHK Mobile. Lien ket nay co hieu luc trong 1 gio.</p>
+                <p><a href='{$resetUrl}'>Dat lai mat khau</a></p>
+            ";
+            send_store_mail($user['email'], 'NHK Mobile - Dat lai mat khau', $mailBody, $pdo);
+
             clear_rate_limit('forgot_password');
         } else {
             // Don't reveal if email exists or not (security best practice)

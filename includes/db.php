@@ -192,6 +192,7 @@ try {
     "); } catch (\PDOException $e) {}
 
     // Bổ sung các cột bị thiếu do nâng cấp hệ thống (is_installment, rating, vv...)
+    try { $pdo->exec("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS verified_purchase INT DEFAULT 0;"); } catch (\PDOException $e) {}
     try { $pdo->exec("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS image VARCHAR(255);"); } catch (\PDOException $e) {}
     try { $pdo->exec("ALTER TABLE news ADD COLUMN IF NOT EXISTS tags VARCHAR(255);"); } catch (\PDOException $e) {}
     try { $pdo->exec("ALTER TABLE news ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'Technology';"); } catch (\PDOException $e) {}
@@ -285,6 +286,84 @@ try {
     "); } catch (\PDOException $e) {}
 
     // Đảm bảo email trong bảng users là UNIQUE (phòng trường hợp migration cũ)
+    // Cau hinh he thong: hotline, dia chi, email, ban do va cac thiet lap hien thi.
+    try { $pdo->exec("
+        CREATE TABLE IF NOT EXISTS system_settings (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            setting_key VARCHAR(100) NOT NULL UNIQUE,
+            setting_value TEXT,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        );
+    "); } catch (\PDOException $e) {}
+
+    try { $pdo->exec("
+        INSERT INTO system_settings (setting_key, setting_value) VALUES
+        ('store_name', 'NHK Mobile'),
+        ('hotline', '0375 352 347'),
+        ('store_email', 'support@nhkmobile.local'),
+        ('store_address', '123 Duong Cong Nghe, Quan 1, TP.HCM'),
+        ('map_embed_url', 'https://www.google.com/maps?q=Ho%20Chi%20Minh%20City&output=embed')
+        ON DUPLICATE KEY UPDATE setting_value = setting_value;
+    "); } catch (\PDOException $e) {}
+
+    // Bang danh muc rieng de admin co the quan ly thay vi sua code.
+    try { $pdo->exec("
+        CREATE TABLE IF NOT EXISTS categories (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(100) NOT NULL UNIQUE,
+            sort_order INT DEFAULT 0,
+            is_active BOOLEAN DEFAULT TRUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    "); } catch (\PDOException $e) {}
+
+    try { $pdo->exec("
+        INSERT INTO categories (name, sort_order, is_active) VALUES
+        ('Apple', 1, TRUE),
+        ('Samsung', 2, TRUE),
+        ('Xiaomi', 3, TRUE),
+        ('OPPO', 4, TRUE),
+        ('Vivo', 5, TRUE),
+        ('Realme', 6, TRUE)
+        ON DUPLICATE KEY UPDATE name = name;
+    "); } catch (\PDOException $e) {}
+
+    // Banner trang chu co the cap nhat trong admin.
+    try { $pdo->exec("
+        CREATE TABLE IF NOT EXISTS homepage_banners (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            title VARCHAR(255) NOT NULL,
+            subtitle VARCHAR(255),
+            image VARCHAR(255),
+            link_url VARCHAR(255) DEFAULT 'product.php',
+            sort_order INT DEFAULT 0,
+            is_active BOOLEAN DEFAULT TRUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    "); } catch (\PDOException $e) {}
+
+    try {
+        $bannerCount = (int)$pdo->query("SELECT COUNT(*) FROM homepage_banners")->fetchColumn();
+        if ($bannerCount === 0) {
+            $pdo->exec("
+                INSERT INTO homepage_banners (title, subtitle, image, link_url, sort_order, is_active) VALUES
+                ('iPhone 17 Pro Max', 'Mở bán hôm nay - ưu đãi lớn', 'apple-iphone-17-pro-max.png', 'product.php?category=Apple', 1, TRUE),
+                ('Galaxy S25 Ultra', 'Trả góp 0% trong 24 tháng', 'samsung-galaxy-s25-ultra.png', 'product.php?category=Samsung', 2, TRUE),
+                ('Xiaomi 17 Ultra', 'Camera Leica và pin bền bỉ', 'xiaomi-17-ultra.png', 'product.php?category=Xiaomi', 3, TRUE);
+            ");
+        }
+    } catch (\PDOException $e) {}
+
+    try { $pdo->exec("
+        UPDATE homepage_banners
+        SET subtitle = CASE
+            WHEN subtitle = 'Mo ban hom nay - uu dai lon' THEN 'Mở bán hôm nay - ưu đãi lớn'
+            WHEN subtitle = 'Tra gop 0% trong 24 thang' THEN 'Trả góp 0% trong 24 tháng'
+            WHEN subtitle = 'Camera Leica va pin ben bi' THEN 'Camera Leica và pin bền bỉ'
+            ELSE subtitle
+        END;
+    "); } catch (\PDOException $e) {}
+
     try { $pdo->exec("ALTER TABLE users ADD CONSTRAINT users_email_unique UNIQUE (email);"); } catch (\PDOException $e) {}
 
     // Đảm bảo có bảng Password Resets cho chức năng quên mật khẩu

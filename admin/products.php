@@ -220,6 +220,16 @@ if (isset($_GET['edit'])) {
     $editProduct = $stmt->fetch();
 }
 
+try {
+    $stmtAdminCats = $pdo->query("SELECT name FROM categories WHERE is_active = 1 ORDER BY sort_order ASC, name ASC");
+    $adminCategories = $stmtAdminCats->fetchAll(PDO::FETCH_COLUMN);
+} catch (Exception $e) {
+    $adminCategories = [];
+}
+if (empty($adminCategories)) {
+    $adminCategories = $pdo->query("SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category <> '' ORDER BY category ASC")->fetchAll(PDO::FETCH_COLUMN);
+}
+
 $pageTitle = "Kho sản phẩm | Admin";
 $basePath = "../";
 include 'includes/admin_header.php';
@@ -245,10 +255,9 @@ include 'includes/admin_header.php';
             <form action="" method="GET" class="d-flex w-100" style="max-width: 600px;">
                 <select name="filter_category" class="form-select me-2 rounded-pill shadow-sm" style="max-width: 150px;">
                     <option value="">Tất cả hãng</option>
-                    <option value="Apple" <?php echo $categoryFilter == 'Apple' ? 'selected' : ''; ?>>Apple</option>
-                    <option value="Samsung" <?php echo $categoryFilter == 'Samsung' ? 'selected' : ''; ?>>Samsung</option>
-                    <option value="Xiaomi" <?php echo $categoryFilter == 'Xiaomi' ? 'selected' : ''; ?>>Xiaomi</option>
-                    <option value="Oppo" <?php echo $categoryFilter == 'Oppo' ? 'selected' : ''; ?>>Oppo</option>
+                    <?php foreach ($adminCategories as $catOption): ?>
+                    <option value="<?php echo htmlspecialchars($catOption); ?>" <?php echo $categoryFilter == $catOption ? 'selected' : ''; ?>><?php echo htmlspecialchars($catOption); ?></option>
+                    <?php endforeach; ?>
                 </select>
                 <input type="text" name="search" class="form-control me-2 rounded-pill shadow-sm" placeholder="Tìm kiếm theo tên sản phẩm..." value="<?php echo htmlspecialchars($search ?? ''); ?>">
                 <button type="submit" class="btn btn-primary rounded-pill px-3 shadow-sm"><i class="bi bi-search"></i> Lọc</button>
@@ -410,10 +419,9 @@ include 'includes/admin_header.php';
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">Danh mục hãng <span class="text-danger">*</span></label>
                                 <select name="category" class="form-select rounded-3">
-                                    <option value="Apple" <?php echo ($editProduct && $editProduct['category'] == 'Apple') ? 'selected' : ''; ?>>Apple</option>
-                                    <option value="Samsung" <?php echo ($editProduct && $editProduct['category'] == 'Samsung') ? 'selected' : ''; ?>>Samsung</option>
-                                    <option value="Xiaomi" <?php echo ($editProduct && $editProduct['category'] == 'Xiaomi') ? 'selected' : ''; ?>>Xiaomi</option>
-                                    <option value="Oppo" <?php echo ($editProduct && $editProduct['category'] == 'Oppo') ? 'selected' : ''; ?>>Oppo</option>
+                                    <?php foreach ($adminCategories as $catOption): ?>
+                                    <option value="<?php echo htmlspecialchars($catOption); ?>" <?php echo ($editProduct && $editProduct['category'] == $catOption) ? 'selected' : ''; ?>><?php echo htmlspecialchars($catOption); ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="col-md-6">

@@ -24,6 +24,13 @@ $excludeIds = !empty($featuredIds) ? implode(',', array_map('intval', $featuredI
 $forYouStmt = $pdo->query("SELECT * FROM products WHERE id NOT IN ($excludeIds) ORDER BY RAND() LIMIT 8");
 $forYouProducts = $forYouStmt->fetchAll();
 
+try {
+    $bannerStmt = $pdo->query("SELECT * FROM homepage_banners WHERE is_active = 1 ORDER BY sort_order ASC, id DESC LIMIT 3");
+    $homeBanners = $bannerStmt->fetchAll();
+} catch (Exception $e) {
+    $homeBanners = [];
+}
+
 $pageTitle = "NHK Mobile | Apple Authorized Reseller";
 $basePath = "";
 
@@ -31,6 +38,247 @@ include 'includes/header.php';
 ?>
 
 <main>
+    <?php if (!empty($homeBanners)): ?>
+    <section class="home-managed-banners">
+        <div class="container-wide">
+            <div class="managed-banner-shell" id="managedBannerCarousel">
+                <div class="managed-banner-track">
+                <?php foreach ($homeBanners as $index => $banner): ?>
+                <a href="<?php echo htmlspecialchars($banner['link_url'] ?: 'product.php'); ?>" class="managed-banner-card" data-banner-index="<?php echo $index; ?>">
+                    <div class="managed-banner-copy">
+                        <span>Khuyến mãi</span>
+                        <h3><?php echo htmlspecialchars($banner['title']); ?></h3>
+                        <p><?php echo htmlspecialchars($banner['subtitle'] ?? ''); ?></p>
+                    </div>
+                    <div class="managed-banner-media">
+                        <?php if (!empty($banner['image'])): ?>
+                        <img src="assets/images/<?php echo htmlspecialchars($banner['image']); ?>" alt="<?php echo htmlspecialchars($banner['title']); ?>" onerror="this.style.display='none'">
+                        <?php endif; ?>
+                    </div>
+                </a>
+                <?php endforeach; ?>
+                </div>
+                <?php if (count($homeBanners) > 1): ?>
+                <button type="button" class="managed-banner-arrow managed-banner-prev" data-banner-arrow="prev" aria-label="Banner trước">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button type="button" class="managed-banner-arrow managed-banner-next" data-banner-arrow="next" aria-label="Banner sau">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+                <div class="managed-banner-dots" aria-label="Banner navigation">
+                    <?php foreach ($homeBanners as $index => $banner): ?>
+                    <button type="button" class="<?php echo $index === 0 ? 'active' : ''; ?>" data-banner-dot="<?php echo $index; ?>" aria-label="Banner <?php echo $index + 1; ?>"></button>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </section>
+    <style>
+        .home-managed-banners {
+            padding: 92px 0 16px;
+            background: #fff;
+        }
+        .managed-banner-shell {
+            position: relative;
+            overflow: hidden;
+            border-radius: 24px;
+            background: #181c20;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+        }
+        .managed-banner-track {
+            display: flex;
+            transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform;
+        }
+        .managed-banner-card {
+            min-width: 100%;
+            min-height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 28px;
+            padding: 34px 48px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #181c20, #2b3137);
+            color: #fff;
+            text-decoration: none;
+        }
+        .managed-banner-copy {
+            min-width: 0;
+            position: relative;
+            z-index: 2;
+        }
+        .managed-banner-copy span {
+            display: block;
+            margin-bottom: 8px;
+            color: rgba(255,255,255,0.62);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .managed-banner-copy h3 {
+            margin: 0 0 8px;
+            color: #fff;
+            font-size: 36px;
+            line-height: 1.18;
+            font-weight: 800;
+        }
+        .managed-banner-copy p {
+            margin: 0;
+            color: rgba(255,255,255,0.68);
+            font-size: 18px;
+            line-height: 1.35;
+        }
+        .managed-banner-media {
+            flex: 0 0 220px;
+            width: 220px;
+            height: 168px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .managed-banner-media img {
+            max-width: 220px;
+            max-height: 168px;
+            object-fit: contain;
+            display: block;
+        }
+        .managed-banner-dots {
+            position: absolute;
+            left: 48px;
+            bottom: 22px;
+            display: flex;
+            gap: 8px;
+            z-index: 3;
+        }
+        .managed-banner-dots button {
+            width: 8px;
+            height: 8px;
+            padding: 0;
+            border: 0;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.38);
+            transition: width 0.25s, background 0.25s;
+            cursor: pointer;
+        }
+        .managed-banner-dots button.active {
+            width: 28px;
+            background: #fff;
+        }
+        .managed-banner-arrow {
+            position: absolute;
+            top: 50%;
+            z-index: 4;
+            width: 44px;
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255,255,255,0.22);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            backdrop-filter: blur(10px);
+            transform: translateY(-50%);
+            transition: background 0.2s, transform 0.2s;
+            cursor: pointer;
+        }
+        .managed-banner-arrow:hover {
+            background: rgba(255,255,255,0.22);
+            transform: translateY(-50%) scale(1.04);
+        }
+        .managed-banner-prev { left: 18px; }
+        .managed-banner-next { right: 18px; }
+        @media (max-width: 991.98px) {
+            .home-managed-banners { padding-top: 84px; }
+            .managed-banner-shell { border-radius: 20px; }
+            .managed-banner-card {
+                min-height: 190px;
+                padding: 28px 24px 42px;
+                gap: 16px;
+            }
+            .managed-banner-copy h3 { font-size: 26px; }
+            .managed-banner-copy p { font-size: 15px; }
+            .managed-banner-media {
+                flex-basis: 120px;
+                width: 120px;
+                height: 120px;
+            }
+            .managed-banner-media img {
+                max-width: 120px;
+                max-height: 120px;
+            }
+            .managed-banner-dots {
+                left: 24px;
+                bottom: 18px;
+            }
+            .managed-banner-arrow {
+                width: 38px;
+                height: 38px;
+            }
+            .managed-banner-prev { left: 10px; }
+            .managed-banner-next { right: 10px; }
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const carousel = document.getElementById('managedBannerCarousel');
+            if (!carousel) return;
+
+            const track = carousel.querySelector('.managed-banner-track');
+            const slides = carousel.querySelectorAll('.managed-banner-card');
+            const dots = carousel.querySelectorAll('[data-banner-dot]');
+            const prev = carousel.querySelector('[data-banner-arrow="prev"]');
+            const next = carousel.querySelector('[data-banner-arrow="next"]');
+            if (!track || slides.length <= 1) return;
+
+            let current = 0;
+            let timer = null;
+
+            function goTo(index) {
+                current = (index + slides.length) % slides.length;
+                track.style.transform = `translateX(-${current * 100}%)`;
+                dots.forEach((dot, dotIndex) => dot.classList.toggle('active', dotIndex === current));
+            }
+
+            function start() {
+                timer = setInterval(() => goTo(current + 1), 4200);
+            }
+
+            function restart() {
+                clearInterval(timer);
+                start();
+            }
+
+            dots.forEach(dot => {
+                dot.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    goTo(Number(this.dataset.bannerDot || 0));
+                    restart();
+                });
+            });
+            if (prev) {
+                prev.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    goTo(current - 1);
+                    restart();
+                });
+            }
+            if (next) {
+                next.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    goTo(current + 1);
+                    restart();
+                });
+            }
+
+            carousel.addEventListener('mouseenter', () => clearInterval(timer));
+            carousel.addEventListener('mouseleave', start);
+            start();
+        });
+    </script>
+    <?php endif; ?>
     <!-- ===== HERO BANNER SECTION (E-COMMERCE STYLE) ===== -->
     <section class="hero-new" id="heroBanners">
         <div class="container-wide" style="padding-top: 10px; padding-bottom: 14px;">

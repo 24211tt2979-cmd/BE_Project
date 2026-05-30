@@ -1,13 +1,4 @@
 <?php
-/**
- * NHK Mobile - Administrative Site Header
- * 
- * Description: App-style header with bottom navigation for mobile-first admin experience.
- * 
- * Author: NguyenHuuKhanh
- * Version: 3.0
- * Date: 2026-04-18
- */
 $current_page = basename($_SERVER['PHP_SELF']);
 ?>
 <!DOCTYPE html>
@@ -25,7 +16,6 @@ $current_page = basename($_SERVER['PHP_SELF']);
 </head>
 <body>
 
-    <!-- APP-STYLE TOP HEADER -->
     <header class="app-top-header">
         <div class="d-flex align-items-center">
             <button class="app-menu-btn me-3" id="sidebarToggle">
@@ -38,11 +28,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
         </div>
         <div class="header-actions">
             <a href="<?php echo $basePath; ?>index.php" class="app-icon-btn" title="Xem Website"><i class="bi bi-globe"></i></a>
-            <a href="<?php echo $basePath; ?>logout.php" class="app-icon-btn text-danger" title="Đăng xuất"><i class="bi bi-box-arrow-right"></i></a>
+            <a href="<?php echo $basePath; ?>logout.php" class="app-icon-btn text-danger" title="Dang xuat"><i class="bi bi-box-arrow-right"></i></a>
         </div>
     </header>
 
-    <!-- SIDEBAR DRAWER -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <aside class="sidebar" id="sidebarMenu">
         <div class="sidebar-header">
@@ -50,19 +39,20 @@ $current_page = basename($_SERVER['PHP_SELF']);
                 <div class="brand-logo-box md me-3">NHK</div>
                 <div>
                     <div class="brand-text md">NHK ADMIN</div>
-                    <small class="text-muted">Quản lý hệ thống</small>
+                    <small class="text-muted">Quan ly he thong</small>
                 </div>
             </div>
         </div>
         <nav class="sidebar-nav">
-            <a href="dashboard.php" class="nav-link-admin <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>"><i class="bi bi-speedometer2"></i> Tổng quan</a>
-            <a href="products.php" class="nav-link-admin <?php echo $current_page == 'products.php' ? 'active' : ''; ?>"><i class="bi bi-phone"></i> Sản phẩm</a>
-            <a href="orders.php" class="nav-link-admin <?php echo $current_page == 'orders.php' ? 'active' : ''; ?>"><i class="bi bi-receipt"></i> Đơn hàng</a>
-            <a href="users.php" class="nav-link-admin <?php echo $current_page == 'users.php' ? 'active' : ''; ?>"><i class="bi bi-people"></i> Khách hàng</a>
+            <a href="dashboard.php" class="nav-link-admin <?php echo $current_page == 'dashboard.php' ? 'active' : ''; ?>"><i class="bi bi-speedometer2"></i> Tong quan</a>
+            <a href="products.php" class="nav-link-admin <?php echo $current_page == 'products.php' ? 'active' : ''; ?>"><i class="bi bi-phone"></i> San pham</a>
+            <a href="categories.php" class="nav-link-admin <?php echo $current_page == 'categories.php' ? 'active' : ''; ?>"><i class="bi bi-tags"></i> Danh muc</a>
+            <a href="orders.php" class="nav-link-admin <?php echo $current_page == 'orders.php' ? 'active' : ''; ?>"><i class="bi bi-receipt"></i> Don hang</a>
+            <a href="users.php" class="nav-link-admin <?php echo $current_page == 'users.php' ? 'active' : ''; ?>"><i class="bi bi-people"></i> Khach hang</a>
             <a href="revenue.php" class="nav-link-admin <?php echo $current_page == 'revenue.php' ? 'active' : ''; ?>"><i class="bi bi-graph-up"></i> Doanh thu</a>
+            <a href="settings.php" class="nav-link-admin <?php echo $current_page == 'settings.php' ? 'active' : ''; ?>"><i class="bi bi-gear"></i> Cau hinh</a>
         </nav>
-        <div class="sidebar-footer">
-        </div>
+        <div class="sidebar-footer"></div>
     </aside>
 
     <main class="main-content">
