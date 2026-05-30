@@ -69,6 +69,17 @@ include 'includes/header.php';
                         <h1 class="display-4 fw-bold mb-3"><?php echo $product['name']; ?></h1>
                         <p class="h2 text-primary fw-bold mb-4"><?php echo number_format($product['price'], 0, ',', '.'); ?>₫</p>
                         
+                        <?php if (!empty($product['specs'])): ?>
+                        <div class="product-detail-specs mb-4">
+                            <?php
+                            $specsArr = array_filter(array_map('trim', explode(',', $product['specs'])));
+                            foreach ($specsArr as $spec):
+                            ?>
+                                <span><?php echo htmlspecialchars($spec); ?></span>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php endif; ?>
+
                         <div class="mb-5">
                             <h5 class="fw-bold mb-3 text-uppercase small letter-spacing text-muted">Mô tả sản phẩm</h5>
                             <p class="text-secondary leading-relaxed fs-5">
@@ -198,6 +209,24 @@ include 'includes/header.php';
 <style>
 .text-warning, .rating-star.bi-star-fill, #star-rating .bi-star-fill, #star-rating .bi-star-half { color: #FF9500 !important; }
 .breadcrumb-item + .breadcrumb-item::before { content: "•"; color: var(--text-muted); }
+
+.product-detail-specs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.product-detail-specs span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 7px 12px;
+    border: 1px solid var(--border-light);
+    border-radius: 6px;
+    background: var(--bg-soft);
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+}
 
 .btn-detail-wishlist {
     display: flex;

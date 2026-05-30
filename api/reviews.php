@@ -68,7 +68,7 @@ if ($method === 'GET') {
         $stmtMeta->execute([$product_id]);
         $meta = $stmtMeta->fetch();
 
-        $verifiedSelect = $hasVerifiedPurchase ? "r.verified_purchase" : "0 AS verified_purchase";
+        $verifiedSelect = "0 AS verified_purchase";
         $imageSelect = $hasReviewImage ? "r.image" : "NULL AS image";
         $stmt = $pdo->prepare("
             SELECT r.id, r.rating, r.title, r.content, r.created_at,
