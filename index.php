@@ -38,249 +38,207 @@ include 'includes/header.php';
 ?>
 
 <main>
-    <?php if (!empty($homeBanners)): ?>
-    <section class="home-managed-banners">
+    <!-- ===== CUSTOM IMAGE BANNER SLIDER ===== -->
+    <section class="home-custom-banners">
         <div class="container-wide">
-            <div class="managed-banner-shell" id="managedBannerCarousel">
-                <div class="managed-banner-track">
-                <?php foreach ($homeBanners as $index => $banner): ?>
-                <a href="<?php echo htmlspecialchars($banner['link_url'] ?: 'product.php'); ?>" class="managed-banner-card" data-banner-index="<?php echo $index; ?>">
-                    <div class="managed-banner-copy">
-                        <span>Khuyến mãi</span>
-                        <h3><?php echo htmlspecialchars($banner['title']); ?></h3>
-                        <p><?php echo htmlspecialchars($banner['subtitle'] ?? ''); ?></p>
-                    </div>
-                    <div class="managed-banner-media">
-                        <?php if (!empty($banner['image'])): ?>
-                        <img src="assets/images/<?php echo htmlspecialchars($banner['image']); ?>" alt="<?php echo htmlspecialchars($banner['title']); ?>" onerror="this.style.display='none'">
-                        <?php endif; ?>
-                    </div>
-                </a>
-                <?php endforeach; ?>
+            <div class="custom-banner-shell" id="customBannerCarousel">
+                <div class="custom-banner-track">
+                    <!-- SLIDE 1 -->
+                    <a href="product.php" class="custom-banner-slide">
+                        <img src="assets/images/banner_1.png" alt="Banner 1">
+                    </a>
+                    
+                    <!-- SLIDE 2 -->
+                    <a href="product.php" class="custom-banner-slide">
+                        <img src="assets/images/banner_2.png" alt="Banner 2">
+                    </a>
+                    
+                    <!-- SLIDE 3 -->
+                    <a href="product.php" class="custom-banner-slide">
+                        <img src="assets/images/banner_3.png" alt="Banner 3">
+                    </a>
                 </div>
-                <?php if (count($homeBanners) > 1): ?>
-                <button type="button" class="managed-banner-arrow managed-banner-prev" data-banner-arrow="prev" aria-label="Banner trước">
+
+                <!-- Nút điều hướng -->
+                <button type="button" class="custom-banner-arrow custom-banner-prev" id="cbPrev">
                     <i class="bi bi-chevron-left"></i>
                 </button>
-                <button type="button" class="managed-banner-arrow managed-banner-next" data-banner-arrow="next" aria-label="Banner sau">
+                <button type="button" class="custom-banner-arrow custom-banner-next" id="cbNext">
                     <i class="bi bi-chevron-right"></i>
                 </button>
-                <div class="managed-banner-dots" aria-label="Banner navigation">
-                    <?php foreach ($homeBanners as $index => $banner): ?>
-                    <button type="button" class="<?php echo $index === 0 ? 'active' : ''; ?>" data-banner-dot="<?php echo $index; ?>" aria-label="Banner <?php echo $index + 1; ?>"></button>
-                    <?php endforeach; ?>
+
+                <!-- Dấu chấm (Dots) -->
+                <div class="custom-banner-dots" id="cbDots">
+                    <button type="button" class="active" data-index="0"></button>
+                    <button type="button" data-index="1"></button>
+                    <button type="button" data-index="2"></button>
                 </div>
-                <?php endif; ?>
             </div>
         </div>
     </section>
+
     <style>
-        .home-managed-banners {
-            padding: 92px 0 16px;
+        .home-custom-banners {
+            padding: 92px 0 16px; /* Tăng padding-top để không bị Navbar che mất */
             background: #fff;
         }
-        .managed-banner-shell {
+        .custom-banner-shell {
             position: relative;
             overflow: hidden;
-            border-radius: 24px;
-            background: #181c20;
+            border-radius: 20px;
             box-shadow: 0 12px 30px rgba(0,0,0,0.12);
         }
-        .managed-banner-track {
+        .custom-banner-track {
             display: flex;
-            transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+            transition: transform 0.5s ease-in-out;
             will-change: transform;
         }
-        .managed-banner-card {
+        .custom-banner-slide {
             min-width: 100%;
-            min-height: 220px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 28px;
-            padding: 34px 48px;
-            overflow: hidden;
-            background: linear-gradient(135deg, #181c20, #2b3137);
-            color: #fff;
-            text-decoration: none;
-        }
-        .managed-banner-copy {
-            min-width: 0;
-            position: relative;
-            z-index: 2;
-        }
-        .managed-banner-copy span {
-            display: block;
-            margin-bottom: 8px;
-            color: rgba(255,255,255,0.62);
-            font-size: 12px;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
-        .managed-banner-copy h3 {
-            margin: 0 0 8px;
-            color: #fff;
-            font-size: 36px;
-            line-height: 1.18;
-            font-weight: 800;
-        }
-        .managed-banner-copy p {
-            margin: 0;
-            color: rgba(255,255,255,0.68);
-            font-size: 18px;
-            line-height: 1.35;
-        }
-        .managed-banner-media {
-            flex: 0 0 220px;
-            width: 220px;
-            height: 168px;
             display: flex;
             align-items: center;
             justify-content: center;
+            text-decoration: none;
+            background: #f8f9fa; /* Màu nền nhẹ cho viền ngoài (nếu ảnh nhỏ hơn khung) */
         }
-        .managed-banner-media img {
-            max-width: 220px;
-            max-height: 168px;
-            object-fit: contain;
+        .custom-banner-slide img {
+            max-width: 100%;
+            height: auto;
+            /* Giữ nguyên kích thước gốc, không kéo giãn làm vỡ nét */
             display: block;
+            margin: 0 auto;
         }
-        .managed-banner-dots {
-            position: absolute;
-            left: 48px;
-            bottom: 22px;
-            display: flex;
-            gap: 8px;
-            z-index: 3;
-        }
-        .managed-banner-dots button {
-            width: 8px;
-            height: 8px;
-            padding: 0;
-            border: 0;
-            border-radius: 999px;
-            background: rgba(255,255,255,0.38);
-            transition: width 0.25s, background 0.25s;
-            cursor: pointer;
-        }
-        .managed-banner-dots button.active {
-            width: 28px;
-            background: #fff;
-        }
-        .managed-banner-arrow {
+        
+        .custom-banner-arrow {
             position: absolute;
             top: 50%;
-            z-index: 4;
+            transform: translateY(-50%);
             width: 44px;
             height: 44px;
-            display: inline-flex;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.7);
+            color: #333;
+            font-size: 20px;
+            display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid rgba(255,255,255,0.22);
-            border-radius: 999px;
-            background: rgba(255,255,255,0.12);
-            color: #fff;
-            backdrop-filter: blur(10px);
-            transform: translateY(-50%);
-            transition: background 0.2s, transform 0.2s;
             cursor: pointer;
+            transition: all 0.2s;
+            z-index: 10;
         }
-        .managed-banner-arrow:hover {
-            background: rgba(255,255,255,0.22);
-            transform: translateY(-50%) scale(1.04);
+        .custom-banner-arrow:hover {
+            background: #fff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-50%) scale(1.05);
         }
-        .managed-banner-prev { left: 18px; }
-        .managed-banner-next { right: 18px; }
-        @media (max-width: 991.98px) {
-            .home-managed-banners { padding-top: 84px; }
-            .managed-banner-shell { border-radius: 20px; }
-            .managed-banner-card {
-                min-height: 190px;
-                padding: 28px 24px 42px;
-                gap: 16px;
+        .custom-banner-prev { left: 16px; }
+        .custom-banner-next { right: 16px; }
+
+        .custom-banner-dots {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+        .custom-banner-dots button {
+            width: 10px;
+            height: 10px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.5);
+            cursor: pointer;
+            transition: all 0.3s;
+            padding: 0;
+        }
+        .custom-banner-dots button.active {
+            width: 24px;
+            border-radius: 12px;
+            background: #fff;
+        }
+
+        @media (max-width: 768px) {
+            .custom-banner-slide img {
+                height: 200px;
             }
-            .managed-banner-copy h3 { font-size: 26px; }
-            .managed-banner-copy p { font-size: 15px; }
-            .managed-banner-media {
-                flex-basis: 120px;
-                width: 120px;
-                height: 120px;
+            .custom-banner-arrow {
+                width: 32px; height: 32px; font-size: 16px;
             }
-            .managed-banner-media img {
-                max-width: 120px;
-                max-height: 120px;
-            }
-            .managed-banner-dots {
-                left: 24px;
-                bottom: 18px;
-            }
-            .managed-banner-arrow {
-                width: 38px;
-                height: 38px;
-            }
-            .managed-banner-prev { left: 10px; }
-            .managed-banner-next { right: 10px; }
         }
     </style>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const carousel = document.getElementById('managedBannerCarousel');
-            if (!carousel) return;
+            const track = document.querySelector('.custom-banner-track');
+            const slides = document.querySelectorAll('.custom-banner-slide');
+            const dots = document.querySelectorAll('.custom-banner-dots button');
+            const prevBtn = document.getElementById('cbPrev');
+            const nextBtn = document.getElementById('cbNext');
+            
+            if (!track || slides.length === 0) return;
 
-            const track = carousel.querySelector('.managed-banner-track');
-            const slides = carousel.querySelectorAll('.managed-banner-card');
-            const dots = carousel.querySelectorAll('[data-banner-dot]');
-            const prev = carousel.querySelector('[data-banner-arrow="prev"]');
-            const next = carousel.querySelector('[data-banner-arrow="next"]');
-            if (!track || slides.length <= 1) return;
+            let currentIndex = 0;
+            const totalSlides = slides.length;
+            let slideInterval;
 
-            let current = 0;
-            let timer = null;
-
-            function goTo(index) {
-                current = (index + slides.length) % slides.length;
-                track.style.transform = `translateX(-${current * 100}%)`;
-                dots.forEach((dot, dotIndex) => dot.classList.toggle('active', dotIndex === current));
+            function updateCarousel() {
+                track.style.transform = `translateX(-${currentIndex * 100}%)`;
+                dots.forEach(dot => dot.classList.remove('active'));
+                if (dots[currentIndex]) {
+                    dots[currentIndex].classList.add('active');
+                }
             }
 
-            function start() {
-                timer = setInterval(() => goTo(current + 1), 4200);
+            function nextSlide() {
+                currentIndex = (currentIndex + 1) % totalSlides;
+                updateCarousel();
             }
 
-            function restart() {
-                clearInterval(timer);
-                start();
+            function prevSlide() {
+                currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+                updateCarousel();
             }
 
-            dots.forEach(dot => {
-                dot.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    goTo(Number(this.dataset.bannerDot || 0));
-                    restart();
+            function startAutoplay() {
+                slideInterval = setInterval(nextSlide, 4000);
+            }
+
+            function resetAutoplay() {
+                clearInterval(slideInterval);
+                startAutoplay();
+            }
+
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                    nextSlide();
+                    resetAutoplay();
+                });
+            }
+
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                    prevSlide();
+                    resetAutoplay();
+                });
+            }
+
+            dots.forEach((dot, index) => {
+                dot.addEventListener('click', () => {
+                    currentIndex = index;
+                    updateCarousel();
+                    resetAutoplay();
                 });
             });
-            if (prev) {
-                prev.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    goTo(current - 1);
-                    restart();
-                });
-            }
-            if (next) {
-                next.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    goTo(current + 1);
-                    restart();
-                });
-            }
 
-            carousel.addEventListener('mouseenter', () => clearInterval(timer));
-            carousel.addEventListener('mouseleave', start);
-            start();
+            startAutoplay();
         });
     </script>
-    <?php endif; ?>
+
     <!-- ===== HERO BANNER SECTION (E-COMMERCE STYLE) ===== -->
-    <section class="hero-new" id="heroBanners">
+    <section class="hero-new mt-4" id="heroBanners">
         <div class="container-wide" style="padding-top: 10px; padding-bottom: 14px;">
 
             <!-- ROW 1: Main Big Banner + Side Banners -->
@@ -383,6 +341,8 @@ include 'includes/header.php';
         </div>
     </section>
 
+
+
     <!-- CATEGORY SECTION -->
     <section class="category-section py-3" style="margin-bottom: 16px;">
         <div class="container-wide">
@@ -398,6 +358,8 @@ include 'includes/header.php';
             </div>
         </div>
     </section>
+
+
 
     <!-- FEATURED PRODUCTS -->
     <section class="products-section">
@@ -672,38 +634,7 @@ include 'includes/header.php';
 
 <!-- Carousel & Countdown Scripts -->
 <script>
-// Hero Carousel
-let currentSlide = 0;
-const slides = document.querySelectorAll('.hero-slide');
-const dots = document.querySelectorAll('.carousel-dot');
-const totalSlides = slides.length;
 
-// Chỉ chạy carousel nếu có slide trong DOM
-if (totalSlides > 0) {
-    function showSlide(index) {
-        slides.forEach((slide, i) => {
-            slide.classList.remove('active');
-            if (dots[i]) dots[i].classList.remove('active');
-        });
-        slides[index].classList.add('active');
-        if (dots[index]) dots[index].classList.add('active');
-    }
-
-    function changeSlide(direction) {
-        currentSlide = (currentSlide + direction + totalSlides) % totalSlides;
-        showSlide(currentSlide);
-    }
-
-    function goToSlide(index) {
-        currentSlide = index;
-        showSlide(currentSlide);
-    }
-
-    // Auto-play carousel
-    setInterval(() => {
-        changeSlide(1);
-    }, 6000);
-}
 
 // Countdown Timer
 function updateCountdown() {

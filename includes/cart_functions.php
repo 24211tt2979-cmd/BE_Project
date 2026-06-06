@@ -25,63 +25,98 @@ function syncCartWithDatabase($pdo) {
     
     $userId = $_SESSION['user_id'] ?? null;
     $isAdmin = isset($_SESSION['admin_id']);
-    $sessionId = session_id();
 
-    // Admin: chỉ dùng session cart, KHÔNG sync DB (admin_id không phải FK hợp lệ trong users)
-    if ($isAdmin && !$userId) {
-        if (!isset($_SESSION['cart'])) {
-            $_SESSION['cart'] = [];
-        }
-        return;
+    // 1. Khởi tạo session rỗng nếu chưa có
+    if (!isset($_SESSION['cart'])) {
+        $_SESSION['cart'] = [];
     }
 
-    // Guest (chưa đăng nhập): chỉ dùng session
-    if (!$userId) {
-        if (!isset($_SESSION['cart'])) {
-            $_SESSION['cart'] = [];
-        }
-        return;
-    }
-    
-    $effectiveUserId = $userId;
-    
-    // TRƯỜNG HỢP 1: Session rỗng -> Nạp giỏ hàng từ DB theo user_id
-    if (!isset($_SESSION['cart']) || empty($_SESSION['cart'])) {
+    // 2. Nạp giỏ hàng từ DB nếu user đăng nhập và session đang rỗng
+    if ($userId && !$isAdmin && empty($_SESSION['cart'])) {
         try {
-            $sql = "SELECT ci.*, p.name, p.price, p.image FROM cart_items ci 
+            $sql = "SELECT ci.*, p.name, p.price, p.discount, p.image, p.stock FROM cart_items ci 
                     JOIN products p ON ci.product_id = p.id 
                     WHERE ci.user_id = ?";
             $stmt = $pdo->prepare($sql);
-            $stmt->execute([$effectiveUserId]);
+            $stmt->execute([$userId]);
             $items = $stmt->fetchAll();
             
-            $_SESSION['cart'] = [];
             foreach ($items as $item) {
-                $_SESSION['cart'][$item['product_id']] = [
-                    'name'  => $item['name'],
-                    'price' => $item['price'],
-                    'image' => $item['image'],
-                    'qty'   => (int)$item['quantity']
-                ];
+                // Chỉ nạp vào session nếu hàng còn tồn kho
+                if ($item['stock'] > 0) {
+                    $qty = min((int)$item['quantity'], $item['stock']);
+                    $actualPrice = $item['price'] - ($item['price'] * ($item['discount'] ?? 0) / 100);
+                    $_SESSION['cart'][$item['product_id']] = [
+                        'name'  => $item['name'],
+                        'price' => $actualPrice,
+                        'image' => $item['image'],
+                        'qty'   => $qty
+                    ];
+                }
             }
         } catch (Exception $e) {
             error_log("[Cart] Error loading cart from DB: " . $e->getMessage());
-            $_SESSION['cart'] = [];
         }
-    } 
-    // TRƯỜNG HỢP 2: Session có hàng -> Lưu xuống DB theo user_id
-    else {
+    }
+
+    // 3. XÁC THỰC GIỎ HÀNG VỚI DATABASE (Cho mọi đối tượng: Guest, Admin, User)
+    if (!empty($_SESSION['cart'])) {
         try {
-            // Xóa những món trong DB mà session không giữ nữa trước
+            $productIds = array_keys($_SESSION['cart']);
+            $placeholders = implode(',', array_fill(0, count($productIds), '?'));
+            $stmt = $pdo->prepare("SELECT id, name, price, discount, stock, image FROM products WHERE id IN ($placeholders)");
+            $stmt->execute($productIds);
+            
+            $dbProducts = [];
+            while ($row = $stmt->fetch()) {
+                $dbProducts[$row['id']] = $row;
+            }
+            
+            $cartModified = false;
+            foreach ($_SESSION['cart'] as $pid => $item) {
+                if (!isset($dbProducts[$pid]) || $dbProducts[$pid]['stock'] <= 0) {
+                    // Sản phẩm bị xóa hoặc hết hàng -> tự động xóa khỏi session
+                    unset($_SESSION['cart'][$pid]);
+                    $cartModified = true;
+                } else {
+                    $dbProduct = $dbProducts[$pid];
+                    $actualPrice = $dbProduct['price'] - ($dbProduct['price'] * ($dbProduct['discount'] ?? 0) / 100);
+                    // Cập nhật giá và tên mới nhất từ DB
+                    if ($_SESSION['cart'][$pid]['price'] != $actualPrice || $_SESSION['cart'][$pid]['name'] != $dbProduct['name']) {
+                        $_SESSION['cart'][$pid]['price'] = $actualPrice;
+                        $_SESSION['cart'][$pid]['name'] = $dbProduct['name'];
+                        $cartModified = true;
+                    }
+                    // Đảm bảo số lượng mua không vượt quá tồn kho
+                    if ($_SESSION['cart'][$pid]['qty'] > $dbProduct['stock']) {
+                        $_SESSION['cart'][$pid]['qty'] = $dbProduct['stock'];
+                        $cartModified = true;
+                    }
+                }
+            }
+            
+            // Lưu thông báo nếu giỏ hàng bị hệ thống thay đổi tự động
+            if ($cartModified) {
+                $_SESSION['cart_notice'] = "Một số sản phẩm trong giỏ đã thay đổi giá hoặc hết hàng và được hệ thống tự động cập nhật.";
+            }
+        } catch (Exception $e) {
+            error_log("[Cart] Error validating session cart: " . $e->getMessage());
+        }
+    }
+
+    // 4. ĐỒNG BỘ LƯU LẠI XUỐNG DB CHO USER ĐÃ ĐĂNG NHẬP
+    if ($userId && !$isAdmin) {
+        try {
             $productIds = array_keys($_SESSION['cart']);
             if (!empty($productIds)) {
                 $placeholders = implode(',', array_fill(0, count($productIds), '?'));
-                $stmt = $pdo->prepare("
-                    DELETE FROM cart_items 
-                    WHERE user_id = ? AND product_id NOT IN ($placeholders)
-                ");
-                $params = array_merge([$effectiveUserId], $productIds);
+                $stmt = $pdo->prepare("DELETE FROM cart_items WHERE user_id = ? AND product_id NOT IN ($placeholders)");
+                $params = array_merge([$userId], $productIds);
                 $stmt->execute($params);
+            } else {
+                // Giỏ hàng rỗng -> xóa sạch trong DB
+                $stmt = $pdo->prepare("DELETE FROM cart_items WHERE user_id = ?");
+                $stmt->execute([$userId]);
             }
             
             // Lưu/Update từng sản phẩm xuống DB
@@ -91,7 +126,7 @@ function syncCartWithDatabase($pdo) {
                     VALUES (?, ?, ?)
                     ON DUPLICATE KEY UPDATE quantity = VALUES(quantity)
                 ");
-                $stmt->execute([$effectiveUserId, $pid, (int)$item['qty']]);
+                $stmt->execute([$userId, $pid, (int)$item['qty']]);
             }
         } catch (Exception $e) {
             error_log("[Cart] Error syncing cart to DB: " . $e->getMessage());

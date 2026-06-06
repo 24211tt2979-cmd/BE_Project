@@ -16,43 +16,196 @@ if (isset($_POST['update_status'])) {
     try {
         $pdo->beginTransaction();
         
-        // Lấy trạng thái hiện tại
-        $stmtCurrent = $pdo->prepare("SELECT status FROM orders WHERE id = ? FOR UPDATE");
-        $stmtCurrent->execute([$id]);
-        $currentStatus = $stmtCurrent->fetchColumn();
+        // Lấy thông tin đơn hàng hiện tại
+        $stmtOrder = $pdo->prepare("SELECT * FROM orders WHERE id = ? FOR UPDATE");
+        $stmtOrder->execute([$id]);
+        $order = $stmtOrder->fetch();
         
-        if ($currentStatus !== false && $currentStatus !== $newStatus) {
-            $isOldCancelled = ($currentStatus === 'Đã hủy');
-            $isNewCancelled = ($newStatus === 'Đã hủy');
+        if ($order && $order['status'] !== $newStatus) {
+            $currentStatus = $order['status'];
+            $activeStatuses = ['Đã duyệt', 'Đang giao', 'Hoàn thành'];
+            $isOldActive = in_array($currentStatus, $activeStatuses);
+            $isNewActive = in_array($newStatus, $activeStatuses);
             
-            // Nếu đổi sang Đã hủy -> Hoàn trả tồn kho
-            if (!$isOldCancelled && $isNewCancelled) {
-                $stmtItems = $pdo->prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?");
+            // 1. CHUYỂN TỪ KHÔNG HOẠT ĐỘNG SANG HOẠT ĐỘNG (Kích hoạt kho, bảo hành, lợi nhuận)
+            if (!$isOldActive && $isNewActive) {
+                // Lấy danh sách mặt hàng
+                $stmtItems = $pdo->prepare("SELECT * FROM order_items WHERE order_id = ?");
                 $stmtItems->execute([$id]);
                 $items = $stmtItems->fetchAll();
                 
-                $stmtUpdateStock = $pdo->prepare("UPDATE products SET stock = stock + ? WHERE id = ?");
+                $totalCost = 0;
+                
                 foreach ($items as $item) {
-                    if ($item['product_id']) {
-                        $stmtUpdateStock->execute([$item['quantity'], $item['product_id']]);
+                    $productId = $item['product_id'];
+                    $qty = (int)$item['quantity'];
+                    
+                    // Lấy giá vốn sản phẩm
+                    $stmtCost = $pdo->prepare("SELECT cost_price FROM products WHERE id = ?");
+                    $stmtCost->execute([$productId]);
+                    $costPrice = (float)$stmtCost->fetchColumn() ?: 0.00;
+                    $totalCost += $costPrice * $qty;
+                    
+                    // Kiểm tra sản phẩm có quản lý IMEI hay không
+                    $stmtHasImeis = $pdo->prepare("SELECT COUNT(*) FROM imeis WHERE product_id = ?");
+                    $stmtHasImeis->execute([$productId]);
+                    $hasImeis = $stmtHasImeis->fetchColumn() > 0;
+                    
+                    if ($hasImeis) {
+                        // Phân bổ IMEI
+                        $stmtGetImeis = $pdo->prepare("SELECT id, imei FROM imeis WHERE product_id = ? AND status = 'Available' ORDER BY id ASC LIMIT ?");
+                        $stmtGetImeis->execute([$productId, $qty]);
+                        $availableImeis = $stmtGetImeis->fetchAll();
+                        
+                        $allocatedImeis = [];
+                        foreach ($availableImeis as $imeiRow) {
+                            $imeiVal = $imeiRow['imei'];
+                            $allocatedImeis[] = $imeiVal;
+                            
+                            // Đánh dấu IMEI là đã bán
+                            $stmtMarkSold = $pdo->prepare("UPDATE imeis SET status = 'Sold' WHERE id = ?");
+                            $stmtMarkSold->execute([$imeiRow['id']]);
+                            
+                            // Tạo bảo hành
+                            $stmtCheckW = $pdo->prepare("SELECT COUNT(*) FROM warranties WHERE imei = ?");
+                            $stmtCheckW->execute([$imeiVal]);
+                            if ($stmtCheckW->fetchColumn() == 0) {
+                                $stmtInsW = $pdo->prepare("
+                                    INSERT INTO warranties (imei, product_id, order_id, status, expires_at, customer_name, customer_phone) 
+                                    VALUES (?, ?, ?, 'Active', ?, ?, ?)
+                                ");
+                                $expiresAt = date('Y-m-d', strtotime('+12 months'));
+                                $stmtInsW->execute([
+                                    $imeiVal, 
+                                    $productId, 
+                                    $id, 
+                                    $expiresAt, 
+                                    $order['customer_name'], 
+                                    $order['customer_phone']
+                                ]);
+                            }
+                        }
+                        
+                        // Cập nhật lại cột imei trong order_items (comma separated)
+                        if (!empty($allocatedImeis)) {
+                            $imeiString = implode(',', $allocatedImeis);
+                            $stmtUpdateItemImei = $pdo->prepare("UPDATE order_items SET imei = ? WHERE id = ?");
+                            $stmtUpdateItemImei->execute([$imeiString, $item['id']]);
+                        }
+                        
+                        // Đồng bộ tồn kho
+                        $stmtUpdateStock = $pdo->prepare("
+                            UPDATE products 
+                            SET stock = (SELECT COUNT(*) FROM imeis WHERE product_id = ? AND status = 'Available') 
+                            WHERE id = ?
+                        ");
+                        $stmtUpdateStock->execute([$productId, $productId]);
+                    } else {
+                        // Trừ kho truyền thống
+                        $stmtUpdateStock = $pdo->prepare("UPDATE products SET stock = GREATEST(0, stock - ?) WHERE id = ?");
+                        $stmtUpdateStock->execute([$qty, $productId]);
                     }
                 }
-            } 
-            // Nếu từ Đã hủy đổi sang trạng thái khác (phục hồi đơn) -> Trừ kho lại
-            else if ($isOldCancelled && !$isNewCancelled) {
-                $stmtItems = $pdo->prepare("SELECT product_id, quantity FROM order_items WHERE order_id = ?");
+                
+                // Cập nhật lợi nhuận
+                $profit = (float)$order['total_price'] - $totalCost;
+                $stmtUpdateProfit = $pdo->prepare("UPDATE orders SET profit = ? WHERE id = ?");
+                $stmtUpdateProfit->execute([$profit, $id]);
+            }
+            
+            // 2. CHUYỂN TỪ HOẠT ĐỘNG SANG KHÔNG HOẠT ĐỘNG (Ví dụ: Đã hủy)
+            elseif ($isOldActive && !$isNewActive) {
+                // Lấy danh sách mặt hàng
+                $stmtItems = $pdo->prepare("SELECT * FROM order_items WHERE order_id = ?");
                 $stmtItems->execute([$id]);
                 $items = $stmtItems->fetchAll();
                 
-                $stmtUpdateStock = $pdo->prepare("UPDATE products SET stock = stock - ? WHERE id = ?");
                 foreach ($items as $item) {
-                    if ($item['product_id']) {
-                        $stmtUpdateStock->execute([$item['quantity'], $item['product_id']]);
+                    $productId = $item['product_id'];
+                    $qty = (int)$item['quantity'];
+                    
+                    if (!empty($item['imei'])) {
+                        $imeis = explode(',', $item['imei']);
+                        foreach ($imeis as $imei) {
+                            $imeiVal = trim($imei);
+                            if (empty($imeiVal)) continue;
+                            
+                            // Đặt lại trạng thái IMEI khả dụng
+                            $stmtRestoreImei = $pdo->prepare("UPDATE imeis SET status = 'Available' WHERE imei = ?");
+                            $stmtRestoreImei->execute([$imeiVal]);
+                            
+                            // Xóa bảo hành liên quan
+                            $stmtDelW = $pdo->prepare("DELETE FROM warranties WHERE order_id = ? AND imei = ?");
+                            $stmtDelW->execute([$id, $imeiVal]);
+                        }
+                        
+                        // Reset cột imei
+                        $stmtClearItemImei = $pdo->prepare("UPDATE order_items SET imei = NULL WHERE id = ?");
+                        $stmtClearItemImei->execute([$item['id']]);
+                        
+                        // Đồng bộ tồn kho
+                        $stmtUpdateStock = $pdo->prepare("
+                            UPDATE products 
+                            SET stock = (SELECT COUNT(*) FROM imeis WHERE product_id = ? AND status = 'Available') 
+                            WHERE id = ?
+                        ");
+                        $stmtUpdateStock->execute([$productId, $productId]);
+                    } else {
+                        // Cộng lại kho truyền thống
+                        $stmtUpdateStock = $pdo->prepare("UPDATE products SET stock = stock + ? WHERE id = ?");
+                        $stmtUpdateStock->execute([$qty, $productId]);
                     }
+                }
+                
+                // Reset lợi nhuận
+                $stmtUpdateProfit = $pdo->prepare("UPDATE orders SET profit = 0.00 WHERE id = ?");
+                $stmtUpdateProfit->execute([$id]);
+            }
+            
+            // 3. XỬ LÝ ĐIỂM TÍCH LŨY CRM (Chỉ áp dụng khi có user_id)
+            if (!empty($order['user_id'])) {
+                $points = floor((float)$order['total_price'] / 100000);
+                
+                $wasCompleted = ($currentStatus === 'Hoàn thành' || $currentStatus === 'Completed');
+                $isCompleted = ($newStatus === 'Hoàn thành' || $newStatus === 'Completed');
+                
+                if (!$wasCompleted && $isCompleted) {
+                    $stmtAddPoints = $pdo->prepare("UPDATE users SET loyalty_points = loyalty_points + ? WHERE id = ?");
+                    $stmtAddPoints->execute([$points, $order['user_id']]);
+                    
+                    // Cập nhật hạng thành viên
+                    $stmtUserPoints = $pdo->prepare("SELECT loyalty_points FROM users WHERE id = ?");
+                    $stmtUserPoints->execute([$order['user_id']]);
+                    $newPoints = (int)$stmtUserPoints->fetchColumn();
+                    
+                    $newTier = 'Bronze';
+                    if ($newPoints >= 1000) $newTier = 'Diamond';
+                    elseif ($newPoints >= 500) $newTier = 'Gold';
+                    elseif ($newPoints >= 100) $newTier = 'Silver';
+                    
+                    $stmtUpdateTier = $pdo->prepare("UPDATE users SET membership_tier = ? WHERE id = ?");
+                    $stmtUpdateTier->execute([$newTier, $order['user_id']]);
+                }
+                elseif ($wasCompleted && !$isCompleted) {
+                    $stmtSubPoints = $pdo->prepare("UPDATE users SET loyalty_points = GREATEST(0, loyalty_points - ?) WHERE id = ?");
+                    $stmtSubPoints->execute([$points, $order['user_id']]);
+                    
+                    // Cập nhật hạng thành viên
+                    $stmtUserPoints = $pdo->prepare("SELECT loyalty_points FROM users WHERE id = ?");
+                    $stmtUserPoints->execute([$order['user_id']]);
+                    $newPoints = (int)$stmtUserPoints->fetchColumn();
+                    
+                    $newTier = 'Bronze';
+                    if ($newPoints >= 1000) $newTier = 'Diamond';
+                    elseif ($newPoints >= 500) $newTier = 'Gold';
+                    elseif ($newPoints >= 100) $newTier = 'Silver';
+                    
+                    $stmtUpdateTier = $pdo->prepare("UPDATE users SET membership_tier = ? WHERE id = ?");
+                    $stmtUpdateTier->execute([$newTier, $order['user_id']]);
                 }
             }
             
-            // Cập nhật trạng thái mới
+            // Cập nhật trạng thái đơn hàng
             $stmt = $pdo->prepare("UPDATE orders SET status = ? WHERE id = ?");
             $stmt->execute([$newStatus, $id]);
             
@@ -61,13 +214,13 @@ if (isset($_POST['update_status'])) {
         
         $pdo->commit();
     } catch (Exception $e) {
-        if ($pdo->inTransaction()) {
+        if ($pdo && $pdo->inTransaction()) {
             $pdo->rollBack();
         }
         error_log("[Admin Orders] Error updating status: " . $e->getMessage());
     }
     
-    // Lưu thông báo vào URL và reload trang
+    // Điều hướng lại trang
     header("Location: orders.php?msg=updated");
     exit;
 }

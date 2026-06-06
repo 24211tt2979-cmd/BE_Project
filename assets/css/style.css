@@ -2685,3 +2685,720 @@ body.dark-mode .hero-badge-secondary {
 .max-w-600 { max-width: 600px; }
 .letter-spacing { letter-spacing: 0.1em; }
 .fw-800 { font-weight: 800; }
+
+/* Quick-action suggestion chips */
+.chat-quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0 0 12px 48px;
+}
+
+.chat-quick-actions button {
+    padding: 6px 12px;
+    background: #fff;
+    border: 1.5px solid var(--primary);
+    border-radius: 980px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.chat-quick-actions button:hover {
+    background: var(--primary);
+    color: #fff;
+}
+
+/* Bot bubble with HTML (links, bold) */
+.chat-bubble.chat-bubble-html {
+    max-width: 85%;
+    word-break: break-word;
+}
+
+.chat-bubble.chat-bubble-html a {
+    color: var(--primary);
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+.chat-bubble.chat-bubble-html a:hover {
+    opacity: 0.8;
+}
+
+
+/* ============================================================
+   ORDER TRACKING TIMELINE
+   NHK Mobile — Order Detail Page Component
+   Colors inherit from :root design tokens.
+   ============================================================ */
+
+/* ── Timeline tokens ─────────────────────────────────────── */
+.order-timeline {
+    --tl-done-color: #34c759;
+    /* green  — completed step      */
+    --tl-done-glow: rgba(52, 199, 89, .25);
+    --tl-active-color: var(--primary);
+    /* blue   — current step        */
+    --tl-active-glow: rgba(0, 122, 255, .25);
+    --tl-pending-color: #d1d1d6;
+    /* gray   — future step         */
+    --tl-cancelled-color: var(--danger);
+    /* red    — cancelled order     */
+    --tl-node-size: 52px;
+    --tl-icon-size: 22px;
+    --tl-line-h: 3px;
+    --tl-label-gap: 14px;
+    --tl-transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    position: relative;
+    padding: 12px 0 8px;
+    width: 100%;
+    overflow: visible;
+}
+
+/* ── Connecting line that runs behind all nodes ───────────── */
+.order-timeline::before {
+    content: '';
+    position: absolute;
+    top: calc(var(--tl-node-size) / 2 + 12px);
+    /* vertically centres on nodes */
+    left: calc(var(--tl-node-size) / 2);
+    right: calc(var(--tl-node-size) / 2);
+    height: var(--tl-line-h);
+    background: var(--tl-pending-color);
+    border-radius: 999px;
+    z-index: 0;
+    transition: background var(--tl-transition);
+}
+
+/* ── Individual step ─────────────────────────────────────── */
+.tl-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+    z-index: 1;
+    text-align: center;
+}
+
+/* filled progress line segment (sits between first and current node) */
+.tl-step::before {
+    content: '';
+    position: absolute;
+    top: calc(var(--tl-node-size) / 2 + 12px);
+    right: 50%;
+    /* starts from this node's center, goes left */
+    left: -50%;
+    /* reaches prev node's center               */
+    height: var(--tl-line-h);
+    background: var(--tl-pending-color);
+    border-radius: 999px;
+    z-index: 0;
+    transition: background var(--tl-transition);
+}
+
+/* First step has no left segment */
+.tl-step:first-child::before {
+    display: none;
+}
+
+/* Completed step → colour the segment green */
+.tl-step.completed::before {
+    background: var(--tl-done-color);
+}
+
+/* Active step   → colour the segment green (progress reaches here) */
+.tl-step.active::before {
+    background: var(--tl-done-color);
+}
+
+/* ── Node (circle) ───────────────────────────────────────── */
+.tl-node {
+    width: var(--tl-node-size);
+    height: var(--tl-node-size);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+    background: #fff;
+    border: var(--tl-line-h) solid var(--tl-pending-color);
+    color: var(--tl-pending-color);
+    font-size: var(--tl-icon-size);
+    transition: all var(--tl-transition);
+    flex-shrink: 0;
+}
+
+/* Completed node */
+.tl-step.completed .tl-node {
+    background: var(--tl-done-color);
+    border-color: var(--tl-done-color);
+    color: #fff;
+    box-shadow: 0 0 0 6px var(--tl-done-glow),
+        0 4px 12px rgba(52, 199, 89, .3);
+}
+
+/* Active node */
+.tl-step.active .tl-node {
+    background: var(--tl-active-color);
+    border-color: var(--tl-active-color);
+    color: #fff;
+    box-shadow: 0 0 0 6px var(--tl-active-glow),
+        0 4px 16px rgba(0, 122, 255, .35);
+    /* Subtle pulse to draw attention */
+    animation: tl-pulse 2.2s ease-in-out infinite;
+}
+
+/* Cancelled node */
+.tl-step.cancelled .tl-node {
+    background: var(--tl-cancelled-color);
+    border-color: var(--tl-cancelled-color);
+    color: #fff;
+    box-shadow: 0 0 0 6px var(--danger-shadow),
+        0 4px 12px rgba(255, 59, 48, .3);
+}
+
+/* Pulse keyframes for the active step */
+@keyframes tl-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 6px var(--tl-active-glow), 0 4px 16px rgba(0, 122, 255, .35);
+    }
+
+    50% {
+        box-shadow: 0 0 0 12px var(--tl-active-glow), 0 4px 20px rgba(0, 122, 255, .2);
+    }
+}
+
+/* Check-mark animation for completed nodes */
+.tl-step.completed .tl-node i {
+    animation: tl-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes tl-pop {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* ── Labels below each node ──────────────────────────────── */
+.tl-label {
+    margin-top: var(--tl-label-gap);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.tl-label-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--tl-pending-color);
+    transition: color var(--tl-transition);
+    white-space: nowrap;
+}
+
+.tl-label-sub {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    transition: color var(--tl-transition);
+}
+
+/* Active / completed — labels become dark */
+.tl-step.active .tl-label-title {
+    color: var(--text-main);
+}
+
+.tl-step.completed .tl-label-title {
+    color: var(--tl-done-color);
+}
+
+.tl-step.cancelled .tl-label-title {
+    color: var(--tl-cancelled-color);
+}
+
+.tl-step.active .tl-label-sub,
+.tl-step.completed .tl-label-sub {
+    color: var(--text-secondary);
+}
+
+/* ── Wrapper card ────────────────────────────────────────── */
+.order-timeline-wrapper {
+    background: var(--bg-soft);
+    border-radius: var(--radius-md);
+    padding: 28px 32px 24px;
+    margin-bottom: 28px;
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-sm);
+}
+
+.order-timeline-wrapper .tl-heading {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── Cancelled banner ────────────────────────────────────── */
+.tl-cancelled-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 59, 48, .07);
+    border: 1px solid rgba(255, 59, 48, .2);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-top: 20px;
+    font-size: 0.85rem;
+    color: var(--danger);
+    font-weight: 600;
+}
+
+/* ── Responsive — vertical layout on mobile ─────────────── */
+@media (max-width: 640px) {
+    .order-timeline {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0;
+    }
+
+    /* Vertical connecting line */
+    .order-timeline::before {
+        top: calc(var(--tl-node-size) / 2);
+        left: calc(var(--tl-node-size) / 2 - var(--tl-line-h) / 2);
+        right: auto;
+        bottom: calc(var(--tl-node-size) / 2);
+        width: var(--tl-line-h);
+        height: auto;
+    }
+
+    .tl-step {
+        flex-direction: row;
+        align-items: center;
+        text-align: left;
+        width: 100%;
+        padding: 10px 0;
+        gap: 16px;
+    }
+
+    /* Vertical segment: above each node */
+    .tl-step::before {
+        top: -50%;
+        bottom: 50%;
+        left: calc(var(--tl-node-size) / 2 - var(--tl-line-h) / 2);
+        right: auto;
+        width: var(--tl-line-h);
+        height: auto;
+    }
+
+    .tl-step:first-child::before {
+        display: none;
+    }
+
+    .tl-label {
+        margin-top: 0;
+        align-items: flex-start;
+    }
+
+    .tl-label-title {
+        white-space: normal;
+        font-size: 0.875rem;
+    }
+
+    .tl-label-sub {
+        font-size: 0.75rem;
+    }
+
+    .order-timeline-wrapper {
+        padding: 20px;
+    }
+}
+
+/* ============================================================
+   END ORDER TRACKING TIMELINE
+   ============================================================ */
+
+/* ============================================================
+   COMPARE PRODUCTS PAGE
+   NHK Mobile — Side-by-side product comparison table.
+   Fully responsive: horizontal scroll on mobile with a
+   sticky attribute-label column on the left.
+   ============================================================ */
+
+/* ── Wrapper: enables horizontal scroll on small screens ──── */
+.compare-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-light);
+    background: #fff;
+}
+
+/* ── Table base ──────────────────────────────────────────── */
+.compare-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 640px;
+    /* forces horizontal scroll below this width */
+}
+
+/* ── Column widths ───────────────────────────────────────── */
+.compare-label-col {
+    width: 160px;
+    min-width: 140px;
+    /* Sticky: label column stays visible while scrolling right */
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--bg-soft);
+    border-right: 2px solid var(--border-light);
+    vertical-align: middle;
+    padding: 18px 20px;
+}
+
+.compare-product-col {
+    width: 220px;
+    min-width: 200px;
+    text-align: center;
+    vertical-align: top;
+    padding: 24px 20px;
+    border-left: 1px solid var(--border-light);
+}
+
+/* ── Header row: product cards ───────────────────────────── */
+.compare-header-row {
+    background: #fff;
+}
+
+.compare-header-row th.compare-label-col {
+    background: var(--bg-gray);
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+}
+
+/* Product image in header */
+.compare-product-img-wrap {
+    width: 140px;
+    height: 170px;
+    margin: 0 auto 16px;
+    background: var(--bg-gray);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    overflow: hidden;
+}
+
+.compare-product-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: transform 0.35s ease;
+}
+
+.compare-product-col:hover .compare-product-img-wrap img {
+    transform: scale(1.06);
+}
+
+/* Product name link */
+.compare-product-name {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--text-main);
+    line-height: 1.35;
+    margin-bottom: 12px;
+    text-decoration: none !important;
+    transition: color 0.2s;
+}
+
+.compare-product-name:hover {
+    color: var(--primary);
+}
+
+/* Remove button */
+.compare-remove-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 14px;
+    background: none;
+    border: 1px solid var(--border-light);
+    border-radius: 980px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.compare-remove-btn:hover {
+    background: rgba(255, 59, 48, 0.08);
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+/* ── Data rows ───────────────────────────────────────────── */
+.compare-data-row:nth-child(even) {
+    background: var(--bg-soft);
+}
+
+.compare-data-row:nth-child(even) .compare-label-col {
+    background: #f0f0f2;
+}
+
+.compare-data-cell {
+    text-align: center;
+    vertical-align: middle;
+    padding: 14px 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-main);
+    border-left: 1px solid var(--border-light);
+    border-top: 1px solid var(--border-light);
+}
+
+/* Row label pill */
+.compare-attr-label {
+    display: flex;
+    align-items: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+/* Price styling */
+.compare-price {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--primary);
+    background: rgba(0, 122, 255, 0.07);
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    display: inline-block;
+}
+
+/* Status badges */
+.compare-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 12px;
+    border-radius: 980px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.compare-badge-success {
+    background: rgba(52, 199, 89, 0.1);
+    color: #1a8f3c;
+}
+
+.compare-badge-danger {
+    background: rgba(255, 59, 48, 0.1);
+    color: var(--danger);
+}
+
+/* ── Action row (Add to Cart) ────────────────────────────── */
+.compare-action-row td {
+    padding: 20px;
+    border-top: 2px solid var(--border-light);
+    background: #fff;
+}
+
+/* ── Empty slot (unfilled column) ────────────────────────── */
+.compare-empty-slot {
+    background: repeating-linear-gradient(-45deg,
+            var(--bg-soft),
+            var(--bg-soft) 6px,
+            #fff 6px,
+            #fff 12px) !important;
+    opacity: 0.6;
+}
+
+.compare-add-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 200px;
+    color: var(--text-muted);
+}
+
+.compare-add-placeholder i {
+    font-size: 2.5rem;
+    opacity: 0.35;
+}
+
+.compare-add-placeholder span {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* ── Empty state (no products at all) ────────────────────── */
+.compare-empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    border-radius: var(--radius-lg);
+    background: var(--bg-soft);
+    border: 1px dashed var(--border-light);
+}
+
+.compare-empty-icon {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: var(--bg-gray);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+}
+
+.compare-empty-state h3 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    color: var(--text-main);
+}
+
+.compare-empty-state p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    max-width: 420px;
+    margin: 0 auto;
+}
+
+/* ── Floating Compare Bar (shown on product pages) ──────── */
+/*
+ * An optional sticky bar that can be added to product.php and
+ * product-detail.php to show how many products are queued.
+ * Revealed by JavaScript when compare_count > 0.
+ */
+.compare-floating-bar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    /* hidden by default */
+    z-index: 999;
+    background: var(--text-main);
+    color: #fff;
+    border-radius: var(--radius-xl);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    white-space: nowrap;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.compare-floating-bar.visible {
+    transform: translateX(-50%) translateY(0);
+}
+
+.compare-floating-bar .compare-count-badge {
+    background: var(--primary);
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 800;
+}
+
+.compare-floating-bar a {
+    color: #fff;
+    text-decoration: underline !important;
+    font-weight: 700;
+    margin-left: 4px;
+}
+
+/* ── "So sánh" button on product cards ───────────────────── */
+.btn-compare {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: rgba(0, 122, 255, 0.08);
+    border: 1px solid rgba(0, 122, 255, 0.2);
+    border-radius: 980px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--primary);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.btn-compare:hover,
+.btn-compare.added {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+/* ── Mobile: hide label text, rely on icon only below 480px ─ */
+@media (max-width: 480px) {
+    .compare-label-col {
+        width: 110px;
+        min-width: 100px;
+        padding: 14px 12px;
+        font-size: 0.7rem;
+    }
+
+    .compare-attr-label span {
+        display: none;
+        /* hide text — icon is enough */
+    }
+
+    .compare-product-col {
+        min-width: 160px;
+    }
+
+    .compare-product-img-wrap {
+        width: 110px;
+        height: 130px;
+    }
+}
+
+/* ============================================================
+   END COMPARE PRODUCTS
+   ============================================================ */
+
+/* ============================================================
+  

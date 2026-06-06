@@ -1,5 +1,14 @@
 <?php
-
+/**
+ * NHK Mobile - Global Header System
+ * 
+ * Description: Handles site-wide meta tags, navigation building, 
+ * session detection, and the premium mobile drawer system.
+ * 
+ * Author: NguyenHuuKhanh
+ * Version: 2.5
+ * Date: 2026-04-08
+ */
 
 // Kiểm tra trạng thái tài khoản nếu user đang đăng nhập
 if (isset($_SESSION['user_id']) && isset($pdo)) {
@@ -997,6 +1006,9 @@ if (isset($_SESSION['user_id']) && isset($pdo)) {
             'profile' => ['title' => 'Hồ sơ', 'url' => 'profile.php'],
             'wishlist' => ['title' => 'Yêu thích', 'url' => 'wishlist.php'],
             'track_order' => ['title' => 'Đơn hàng', 'url' => 'track_order.php'],
+            'warranty' => ['title' => 'Bảo hành', 'url' => 'warranty.php'],
+            'news' => ['title' => 'Tin tức', 'url' => 'news.php'],
+            'news-detail' => ['title' => 'Chi tiết tin', 'url' => '#'],
         ];
 
         return $breadcrumbs[$filename] ?? null;
@@ -1015,8 +1027,8 @@ if (isset($_SESSION['user_id']) && isset($pdo)) {
 
             <ul class="nav-links mb-0 d-none d-lg-flex">
                 <li><a href="<?php echo $basePath; ?>product.php" class="nav-link">Điện thoại</a></li>
-                <li><a href="<?php echo $basePath; ?>product.php?category=Apple" class="nav-link">iPhone</a></li>
-                <li><a href="<?php echo $basePath; ?>product.php?category=Samsung" class="nav-link">Samsung</a></li>
+                <li><a href="<?php echo $basePath; ?>warranty.php" class="nav-link">Bảo hành</a></li>
+                <li><a href="<?php echo $basePath; ?>news.php" class="nav-link">Tin tức</a></li>
             </ul>
 
             <div class="nav-actions">
@@ -1103,7 +1115,7 @@ if (isset($_SESSION['user_id']) && isset($pdo)) {
     <div class="offcanvas offcanvas-start" tabindex="-1" id="mobileNav" style="width: 280px; border-right: none;">
         <div class="offcanvas-header py-4 px-4 border-bottom">
             <div class="nav-brand">
-                <div class="brand-logo-box sm me-2">TK</div>
+                <div class="brand-logo-box sm me-2">NHK</div>
                 <span class="brand-text sm">MOBILE</span>
             </div>
             <button type="button" class="btn-close shadow-none" data-bs-dismiss="offcanvas"></button>
@@ -1128,6 +1140,15 @@ if (isset($_SESSION['user_id']) && isset($pdo)) {
                         <i class="bi bi-person-vcard me-3 fs-5"></i> Hồ sơ của tôi
                     </a>
                     <?php endif; ?>
+                    <a href="<?php echo $basePath; ?>warranty.php" class="list-group-item list-group-item-action py-3 px-4 border-0 fw-bold d-flex align-items-center">
+                        <i class="bi bi-shield-check me-3 fs-5"></i> Bảo hành
+                    </a>
+                    <a href="<?php echo $basePath; ?>news.php" class="list-group-item list-group-item-action py-3 px-4 border-0 fw-bold d-flex align-items-center">
+                        <i class="bi bi-newspaper me-3 fs-5"></i> Tin tức
+                    </a>
+                    <a href="<?php echo $basePath; ?>check.php" class="list-group-item list-group-item-action py-3 px-4 border-0 fw-bold d-flex align-items-center">
+                        <i class="bi bi-clipboard-check me-3 fs-5"></i> Kiểm tra hệ thống
+                    </a>
                 </div>
             </div>
             

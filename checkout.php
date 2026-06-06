@@ -40,11 +40,31 @@ if (empty($cartItems) && !isset($_GET['order'])) {
     exit;
 }
 
-// Tính tổng tiền cần thanh toán
+// Tính tổng tiền cần thanh toán ban đầu
 $total = 0;
 foreach ($cartItems as $item) {
     $total += $item['price'] * $item['qty'];
 }
+
+// 1. CRM - Tính chiết khấu theo hạng thành viên
+$userTier = 'Bronze';
+$tierDiscountPercent = 0;
+if (isset($_SESSION['user_id'])) {
+    try {
+        $stmtTier = $pdo->prepare("SELECT membership_tier FROM users WHERE id = ?");
+        $stmtTier->execute([$_SESSION['user_id']]);
+        $userTier = $stmtTier->fetchColumn() ?: 'Bronze';
+        
+        if ($userTier === 'Silver') $tierDiscountPercent = 2;
+        elseif ($userTier === 'Gold') $tierDiscountPercent = 5;
+        elseif ($userTier === 'Diamond') $tierDiscountPercent = 8;
+    } catch (Exception $e) {
+        error_log("[Checkout CRM] Error fetching tier: " . $e->getMessage());
+    }
+}
+
+$discountAmount = round($total * ($tierDiscountPercent / 100));
+$finalTotal = $total - $discountAmount;
 
 /**
  * XỬ LÝ ĐẶT HÀNG (Khi khách nhấn nút "Xác nhận đặt hàng")
@@ -77,7 +97,7 @@ if (isset($_POST['place_order'])) {
             $sqlOrder = "INSERT INTO orders (customer_name, customer_phone, customer_address, total_price, status, payment_method, user_id, is_installment) 
                          VALUES (?, ?, ?, ?, 'Chờ duyệt', ?, ?, ?)";
             $stmtOrder = $pdo->prepare($sqlOrder);
-            $stmtOrder->execute([$name, $phone, $address, $total, $payment, $userId, $isInstallmentVal]);
+            $stmtOrder->execute([$name, $phone, $address, $finalTotal, $payment, $userId, $isInstallmentVal]);
             
             // Lấy ID vừa chèn từ lastInsertId()
             $orderId = $pdo->lastInsertId();
@@ -101,7 +121,7 @@ if (isset($_POST['place_order'])) {
             if ($customerEmail && is_valid_email($customerEmail)) {
                 $mailBody = "<h2>NHK Mobile da nhan don hang #$orderId</h2>"
                     . "<p>Cam on " . htmlspecialchars($name) . " da dat hang.</p>"
-                    . "<p>Tong tien: <strong>" . number_format($total, 0, ',', '.') . " VND</strong></p>"
+                    . "<p>Tong tien: <strong>" . number_format($finalTotal, 0, ',', '.') . " VND</strong></p>"
                     . "<p>Trang thai hien tai: Cho duyet. Cua hang se lien he xac nhan som.</p>";
                 send_store_mail($customerEmail, "NHK Mobile - Xac nhan don hang #$orderId", $mailBody, $pdo);
             }
@@ -151,6 +171,7 @@ include 'includes/header.php';
                     } catch(Exception $e) {}
                 }
                 $isMomo = (strcasecmp($paymentMethod, 'Momo') === 0);
+                $isPayOS = (strcasecmp($paymentMethod, 'PayOS') === 0);
             ?>
                 <div class="row justify-content-center py-5">
                     <div class="col-md-10 col-lg-8">
@@ -208,6 +229,89 @@ include 'includes/header.php';
                                     </div>
                                 </div>
                             <?php endif; ?>
+
+                            <?php if ($isPayOS): ?>
+                                <!-- Premium PayOS VietQR Card -->
+                                <div class="card border-0 rounded-4 shadow-sm p-4 mb-4 mx-auto text-center" style="max-width: 480px; background: linear-gradient(135deg, #00468f, #0066cc); color: white;">
+                                    <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
+                                        <i class="bi bi-qr-code-scan fs-3"></i>
+                                        <h5 class="fw-bold mb-0">Thanh toán VietQR qua PayOS</h5>
+                                    </div>
+                                    <p class="small text-white-50 mb-4">Quét mã QR bằng ứng dụng ngân hàng (Mobile Banking) để thanh toán tức thì</p>
+                                    
+                                    <div class="bg-white p-3 rounded-4 d-inline-block mx-auto mb-4 shadow-sm">
+                                        <?php 
+                                            $qrUrl = "https://img.vietqr.io/image/MB-0375352347-compact2.png?amount=" . $orderTotal . "&addInfo=NHK_ORD_" . $lastOrderId . "&accountName=NGUYEN%20HUU%20KHANH";
+                                        ?>
+                                        <img src="<?php echo $qrUrl; ?>" width="200" height="200" alt="Mã QR VietQR" class="d-block mx-auto">
+                                    </div>
+                                    
+                                    <div class="text-start bg-black bg-opacity-25 rounded-4 p-3 fs-7 border border-white border-opacity-10">
+                                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom border-white border-opacity-10">
+                                            <span class="text-white-50">Ngân hàng:</span>
+                                            <span class="fw-bold text-white">MB Bank (Quân Đội)</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom border-white border-opacity-10">
+                                            <span class="text-white-50">Số tài khoản:</span>
+                                            <span class="fw-bold text-white">0375 352 347</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom border-white border-opacity-10">
+                                            <span class="text-white-50">Số tiền:</span>
+                                            <span class="fw-bold text-warning fs-5"><?php echo number_format($orderTotal, 0, ',', '.'); ?>₫</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-white-50">Nội dung chuyển:</span>
+                                            <span class="fw-bold text-warning">NHK_ORD_<?php echo $lastOrderId; ?></span>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 small text-white-50">
+                                        <i class="bi bi-shield-check me-1"></i> Hệ thống tự động xác nhận khi nhận được thanh toán
+                                    </div>
+                                    
+                                    <!-- Nút giả lập thanh toán Webhook cho khách/kiểm thử -->
+                                    <button type="button" id="btnSimulateWebhook" class="btn btn-warning btn-sm w-100 rounded-pill mt-3 fw-bold text-dark border-0">
+                                        <i class="bi bi-lightning-fill"></i> Giả lập thanh toán thành công (Webhook)
+                                    </button>
+                                    <div id="simulationMsg" class="mt-2 small text-warning"></div>
+                                </div>
+                                <script>
+                                document.getElementById('btnSimulateWebhook').addEventListener('click', function() {
+                                    const msgEl = document.getElementById('simulationMsg');
+                                    msgEl.textContent = 'Đang gửi webhook...';
+                                    
+                                    fetch('api/payos_webhook.php', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            event: 'payment.success',
+                                            data: {
+                                                orderCode: <?php echo $lastOrderId; ?>,
+                                                amount: <?php echo $orderTotal; ?>,
+                                                description: 'NHK_ORD_<?php echo $lastOrderId; ?>',
+                                                reference: 'SIMULATED_TX_REF_' + Math.floor(Math.random() * 1000000)
+                                            }
+                                        })
+                                    })
+                                    .then(r => r.json())
+                                    .then(data => {
+                                        if (data.status === 'success') {
+                                            msgEl.className = 'mt-2 small text-success fw-bold';
+                                            msgEl.innerHTML = '<i class="bi bi-check-circle"></i> Đã kích hoạt Webhook! Tải lại trang trong 2 giây...';
+                                            setTimeout(() => {
+                                                location.reload();
+                                            }, 2000);
+                                        } else {
+                                            msgEl.className = 'mt-2 small text-danger';
+                                            msgEl.textContent = 'Lỗi: ' + data.message;
+                                        }
+                                    })
+                                    .catch(e => {
+                                        msgEl.className = 'mt-2 small text-danger';
+                                        msgEl.textContent = 'Lỗi kết nối';
+                                    });
+                                });
+                                </script>
+                            <?php endif; ?>
                             
                             <div class="bg-light rounded-4 p-4 mb-4 text-start border">
                                 <div class="d-flex align-items-center gap-3 mb-2">
@@ -263,6 +367,11 @@ include 'includes/header.php';
                                           <label class="fw-bold mb-0 flex-grow-1" for="cod">Trả tiền mặt khi nhận hàng (COD)</label>
                                           <i class="bi bi-cash text-success"></i>
                                      </div>
+                                     <div class="bg-white border rounded-4 p-3 mb-3 d-flex align-items-center gap-3">
+                                          <input type="radio" name="payment_method" value="PayOS" id="payos">
+                                          <label class="fw-bold mb-0 flex-grow-1" for="payos">Thanh toán VietQR nhanh qua PayOS (Tự động duyệt)</label>
+                                          <i class="bi bi-qr-code-scan text-primary"></i>
+                                     </div>
                                      <div class="bg-white border rounded-4 p-3 d-flex align-items-center gap-3">
                                           <input type="radio" name="payment_method" value="Momo" id="momo">
                                           <label class="fw-bold mb-0 flex-grow-1" for="momo">Chuyển khoản Online / Ví Momo</label>
@@ -290,8 +399,23 @@ include 'includes/header.php';
                             </div>
                             
                             <div class="d-flex justify-content-between mt-4">
+                                <span class="text-secondary">Tạm tính:</span>
+                                <span class="fw-bold"><?php echo number_format($total, 0, ',', '.'); ?>₫</span>
+                            </div>
+                            <?php if ($tierDiscountPercent > 0): ?>
+                            <div class="d-flex justify-content-between mt-2 text-success">
+                                <span>Thành viên (<?php echo $userTier; ?> -<?php echo $tierDiscountPercent; ?>%):</span>
+                                <span>-<?php echo number_format($discountAmount, 0, ',', '.'); ?>₫</span>
+                            </div>
+                            <?php else: ?>
+                            <div class="d-flex justify-content-between mt-2 text-secondary small">
+                                <span>Hạng thành viên:</span>
+                                <span><?php echo $userTier; ?></span>
+                            </div>
+                            <?php endif; ?>
+                            <div class="d-flex justify-content-between mt-3 pt-3 border-top">
                                 <h4 class="fw-bold">Tổng cộng:</h4>
-                                <h4 class="fw-bold text-primary"><?php echo number_format($total, 0, ',', '.'); ?>₫</h4>
+                                <h4 class="fw-bold text-primary"><?php echo number_format($finalTotal, 0, ',', '.'); ?>₫</h4>
                             </div>
                             <button type="submit" name="place_order" class="btn btn-dark w-100 rounded-pill py-3 fw-bold mt-5 shadow">Xác nhận đặt mua ngay</button>
                         </div>

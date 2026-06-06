@@ -37,6 +37,19 @@ if (isset($_SESSION['user_id'])) {
     $isWishlisted = (bool)$wlChk->fetchColumn();
 }
 
+// Fetch related products (same category, excluding current product)
+$isPostgres = (strpos($pdo->getAttribute(PDO::ATTR_DRIVER_NAME), 'pgsql') !== false);
+$orderBy = $isPostgres ? 'RANDOM()' : 'RAND()';
+$stmtRelated = $pdo->prepare("SELECT * FROM products WHERE category = ? AND id <> ? ORDER BY $orderBy LIMIT 4");
+$stmtRelated->execute([$product['category'], $product['id']]);
+$relatedProducts = $stmtRelated->fetchAll();
+
+if (empty($relatedProducts)) {
+    $stmtRelated = $pdo->prepare("SELECT * FROM products WHERE id <> ? ORDER BY $orderBy LIMIT 4");
+    $stmtRelated->execute([$product['id']]);
+    $relatedProducts = $stmtRelated->fetchAll();
+}
+
 $pageTitle = "NHK Mobile | " . $product['name'];
 $basePath = "";
 include 'includes/header.php';
@@ -67,7 +80,18 @@ include 'includes/header.php';
                         </nav>
                         
                         <h1 class="display-4 fw-bold mb-3"><?php echo $product['name']; ?></h1>
-                        <p class="h2 text-primary fw-bold mb-4"><?php echo number_format($product['price'], 0, ',', '.'); ?>₫</p>
+                        <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+                            <span class="h2 text-primary fw-bold mb-0"><?php echo number_format($product['price'], 0, ',', '.'); ?>₫</span>
+                            <?php if ($product['stock'] > 0): ?>
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2 small fw-bold">
+                                    <i class="bi bi-check-circle-fill me-1"></i> Còn hàng (<?php echo $product['stock']; ?> chiếc)
+                                </span>
+                            <?php else: ?>
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-2 small fw-bold">
+                                    <i class="bi bi-x-circle-fill me-1"></i> Tạm hết hàng
+                                </span>
+                            <?php endif; ?>
+                        </div>
                         
                         <?php if (!empty($product['specs'])): ?>
                         <div class="product-detail-specs mb-4">
@@ -86,6 +110,8 @@ include 'includes/header.php';
                                 <?php echo nl2br($product['description'] ? $product['description'] : 'Trải nghiệm công nghệ đỉnh cao với thiết kế tinh tế và hiệu năng mạnh mẽ nhất hiện nay.'); ?>
                             </p>
                         </div>
+
+
 
                         <div class="d-flex flex-column gap-3">
                             <?php if ($product['stock'] > 0): ?>
@@ -130,6 +156,48 @@ include 'includes/header.php';
                 </div>
             </div>
 
+            <!-- Related Products Section -->
+            <?php if (!empty($relatedProducts)): ?>
+            <div class="mt-5 pt-5 border-top animate-reveal">
+                <div class="section-title-box text-start mb-5">
+                    <span class="section-subtitle">Gợi ý mua sắm</span>
+                    <h2 class="display-5 fw-bold">Sản phẩm liên quan.</h2>
+                </div>
+                <div class="product-grid-new">
+                    <?php foreach ($relatedProducts as $rp): ?>
+                        <div class="product-card-new">
+                            <a href="product-detail.php?id=<?php echo $rp['id']; ?>">
+                                <div class="product-img-box">
+                                    <?php if($rp['is_featured']): ?>
+                                        <span class="badge-hot">Hot Deal</span>
+                                    <?php endif; ?>
+                                    <img src="assets/images/<?php echo $rp['image']; ?>" alt="<?php echo $rp['name']; ?>"
+                                         onerror="this.src='https://placehold.co/300x400/f5f5f7/1d1d1f?text=Phone'">
+                                </div>
+                                <div class="product-info-new">
+                                    <span class="p-cat"><?php echo $rp['category']; ?></span>
+                                    <h3 class="p-name"><?php echo $rp['name']; ?></h3>
+                                    <div class="p-price-new"><?php echo number_format($rp['price'], 0, ',', '.'); ?>₫</div>
+                                    <?php if(!empty($rp['specs'])): ?>
+                                    <div class="p-specs">
+                                        <?php
+                                        $specsArr = array_map('trim', explode(',', $rp['specs']));
+                                        foreach(array_slice($specsArr, 0, 2) as $spec): ?>
+                                        <span><?php echo htmlspecialchars($spec); ?></span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <?php endif; ?>
+                                </div>
+                            </a>
+                            <a href="cart.php?add=<?php echo $rp['id']; ?>" class="add-to-cart-btn">
+                                <i class="bi bi-plus-lg"></i>
+                            </a>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <!-- Reviews Section -->
             <div class="mt-5 pt-5 border-top">
                 <div class="section-title-box text-start mb-5">
@@ -144,7 +212,25 @@ include 'includes/header.php';
                             <div class="text-warning fs-3 my-3" id="star-rating">
                                 <i class="bi bi-star"></i><i class="bi bi-star"></i><i class="bi bi-star"></i><i class="bi bi-star"></i><i class="bi bi-star"></i>
                             </div>
-                            <p class="text-muted mb-0" id="total-reviews">0 đánh giá</p>
+                            <p class="text-muted mb-4" id="total-reviews">0 đánh giá</p>
+
+                            <!-- Rating Breakdown Bars (5★ → 1★) -->
+                            <div id="rating-breakdown" class="text-start">
+                                <?php foreach ([5,4,3,2,1] as $n): ?>
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="small fw-bold text-nowrap" style="width:20px;"><?php echo $n; ?></span>
+                                    <i class="bi bi-star-fill text-warning" style="font-size:.75rem;"></i>
+                                    <div class="progress flex-grow-1" style="height:8px; border-radius:999px;">
+                                        <div class="progress-bar bg-warning" role="progressbar"
+                                             id="bar-<?php echo $n; ?>"
+                                             style="width:0%; border-radius:999px;"
+                                             aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                    <span class="small text-muted" id="count-<?php echo $n; ?>">0</span>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
                         </div>
                     </div>
 
@@ -152,29 +238,39 @@ include 'includes/header.php';
                         <div class="card border-0 bg-light rounded-4 mb-5 shadow-sm">
                             <div class="card-body p-4 p-md-5">
                                 <h4 class="fw-bold mb-4">Viết đánh giá của bạn</h4>
-                                <form id="review-form">
+
+                                <?php if (!isset($_SESSION['user_id']) && !isset($_SESSION['admin_id'])): ?>
+                                <!-- Login Gate: shown to guests -->
+                                <div class="alert alert-warning d-flex align-items-center gap-3 rounded-3 mb-4">
+                                    <i class="bi bi-lock-fill fs-4"></i>
+                                    <div>
+                                        <strong>Bạn cần đăng nhập để gửi đánh giá.</strong><br>
+                                        <a href="login.php?redirect=<?php echo urlencode('product-detail.php?id=' . $product['id']); ?>" class="alert-link">
+                                            Đăng nhập ngay &rarr;
+                                        </a>
+                                        &nbsp;hoặc
+                                        <a href="register.php" class="alert-link">Tạo tài khoản</a>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
+
+                                <form id="review-form" <?php if (!isset($_SESSION['user_id']) && !isset($_SESSION['admin_id'])): ?>style="opacity:.45; pointer-events:none; user-select:none;"<?php endif; ?>>
                                     <input type="hidden" id="product_id" value="<?php echo $product['id']; ?>">
+
+                                    <!-- ── 5-Star Clickable Rating ─────────────────── -->
                                     <div class="mb-4">
-                                        <label class="form-label text-muted fw-bold small">MỨC ĐỘ HÀI LÒNG</label>
-                                        <div class="rating-select text-warning fs-2" style="cursor: pointer;">
-                                            <i class="bi bi-star rating-star" data-value="1"></i>
-                                            <i class="bi bi-star rating-star" data-value="2"></i>
-                                            <i class="bi bi-star rating-star" data-value="3"></i>
-                                            <i class="bi bi-star rating-star" data-value="4"></i>
-                                            <i class="bi bi-star rating-star" data-value="5"></i>
+                                        <label class="form-label text-muted fw-bold small">ĐÁNH GIÁ CỦA BẠN</label>
+                                        <div id="star-selector" class="rating-select" style="cursor: pointer; display: inline-flex; gap: 6px;">
+                                            <i class="bi bi-star-fill rating-star" data-value="1"></i>
+                                            <i class="bi bi-star-fill rating-star" data-value="2"></i>
+                                            <i class="bi bi-star-fill rating-star" data-value="3"></i>
+                                            <i class="bi bi-star-fill rating-star" data-value="4"></i>
+                                            <i class="bi bi-star-fill rating-star" data-value="5"></i>
                                         </div>
                                         <input type="hidden" id="rating_val" value="5">
                                     </div>
-                                    
+
                                     <div class="row g-3 mb-3">
-                                        <?php if(!isset($_SESSION['user_id']) && !isset($_SESSION['admin_id'])): ?>
-                                            <div class="col-md-6">
-                                                <input type="text" class="form-control rounded-3 py-3" id="reviewer_name" placeholder="Tên của bạn *" required>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <input type="email" class="form-control rounded-3 py-3" id="reviewer_email" placeholder="Email (không bắt buộc)">
-                                            </div>
-                                        <?php endif; ?>
                                         <div class="col-12">
                                             <input type="text" class="form-control rounded-3 py-3" id="review_title" placeholder="Tiêu đề đánh giá">
                                         </div>
@@ -182,7 +278,7 @@ include 'includes/header.php';
                                             <textarea class="form-control rounded-3 py-3" id="review_content" rows="4" placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm này *" required></textarea>
                                         </div>
                                         <div class="col-12">
-                                            <label class="form-label text-muted fw-bold small">HÌNH ẢNH MINH HỌA</label>
+                                            <label class="form-label text-muted fw-bold small">HÌNH ẢNH MINH HỌA (tùy chọn)</label>
                                             <input type="file" id="review_image" class="form-control rounded-3" accept="image/*">
                                         </div>
                                     </div>
@@ -207,7 +303,34 @@ include 'includes/header.php';
 </main>
 
 <style>
-.text-warning, .rating-star.bi-star-fill, #star-rating .bi-star-fill, #star-rating .bi-star-half { color: #FF9500 !important; }
+/* ─ Star colours ──────────────────────────────────────────────────────────────────────── */
+.text-warning,
+.rating-star.bi-star-fill,
+#star-rating .bi-star-fill,
+#star-rating .bi-star-half { color: #FF9500 !important; }
+
+/* ─ 5-Star Clickable Selector ─────────────────────────────────────────────────────── */
+#star-selector {
+    /* Reverse the star order so CSS sibling trick works left-to-right */
+}
+.rating-star {
+    transition: transform 0.15s ease, color 0.15s ease;
+    font-size: 2rem;          /* fs-2 equivalent */
+    color: #FF9500;           /* filled gold by default (value=5) */
+}
+.rating-star:hover,
+.rating-star.hovered {
+    transform: scale(1.25);
+    color: #FF9500;
+}
+.rating-star.dim {
+    color: #ddd;              /* un-hovered stars to the right go grey */
+}
+
+/* ─ Rating breakdown bars ─────────────────────────────────────────────────────────── */
+#rating-breakdown .progress { background: #e9e9e9; }
+#rating-breakdown .progress-bar { transition: width .6s cubic-bezier(.4,0,.2,1); }
+
 .breadcrumb-item + .breadcrumb-item::before { content: "•"; color: var(--text-muted); }
 
 .product-detail-specs {
@@ -297,6 +420,6 @@ function toggleWishlistDetail(productId, btn) {
 }
 </script>
 
-<script src="assets/js/product-reviews.js?v=1.0.1"></script>
+<script src="assets/js/product-reviews.js?v=2.0"></script>
 
 <?php include 'includes/footer.php'; ?>

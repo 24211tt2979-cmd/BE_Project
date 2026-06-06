@@ -13,6 +13,24 @@
 
 require_once __DIR__ . '/functions.php';
 
+/**
+ * Helper function to safely add a column to a table if it does not already exist.
+ * This is a cross-compatible solution for MySQL/MariaDB.
+ */
+if (!function_exists('dbAddColumn')) {
+    function dbAddColumn($pdo, $table, $column, $definition) {
+        try {
+            $stmt = $pdo->prepare("SHOW COLUMNS FROM `$table` LIKE ?");
+            $stmt->execute([$column]);
+            if ($stmt->rowCount() === 0) {
+                $pdo->exec("ALTER TABLE `$table` ADD COLUMN `$column` $definition");
+            }
+        } catch (\PDOException $e) {
+            @error_log("[DB Migration Warning] Failed to add column '$column' to table '$table': " . $e->getMessage());
+        }
+    }
+}
+
 // 1. Cấu hình kết nối - ƯU TIÊN DATABASE_URL TỪ RENDER
 // Render sẽ tự động set biến môi trường DATABASE_URL
 $databaseUrl = getenv('DATABASE_URL') ?: ($_ENV['DATABASE_URL'] ?? $_SERVER['DATABASE_URL'] ?? null);
@@ -135,10 +153,12 @@ try {
         if ($forceReset) {
             @error_log("[DB] FORCE RESET TRIGGERED - Dropping and recreating all tables...");
             
-            // Drop tất cả tables
+             // Drop tất cả tables
             $tables = [
                 'password_resets', 'repair_history', 'order_items', 'orders',
                 'cart_items', 'reviews', 'wishlists', 'warranties',
+                'return_requests', 'admin_logs', 'chatbot_rules', 'subscribers',
+                'system_settings', 'categories', 'homepage_banners',
                 'products', 'users', 'admins', 'news'
             ];
             foreach ($tables as $table) {
@@ -192,25 +212,36 @@ try {
     "); } catch (\PDOException $e) {}
 
     // Bổ sung các cột bị thiếu do nâng cấp hệ thống (is_installment, rating, vv...)
-    try { $pdo->exec("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS verified_purchase INT DEFAULT 0;"); } catch (\PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE reviews ADD COLUMN IF NOT EXISTS image VARCHAR(255);"); } catch (\PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE news ADD COLUMN IF NOT EXISTS tags VARCHAR(255);"); } catch (\PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE news ADD COLUMN IF NOT EXISTS category VARCHAR(100) DEFAULT 'Technology';"); } catch (\PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE news ADD COLUMN IF NOT EXISTS excerpt TEXT;"); } catch (\PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE products ADD COLUMN IF NOT EXISTS rating DECIMAL(3,2) DEFAULT 0.00;"); } catch (\PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE products ADD COLUMN IF NOT EXISTS review_count INT DEFAULT 0;"); } catch (\PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE products ADD COLUMN IF NOT EXISTS specs TEXT;"); } catch (\PDOException $e) {}
+    dbAddColumn($pdo, 'reviews', 'verified_purchase', 'INT DEFAULT 0');
+    dbAddColumn($pdo, 'reviews', 'image', 'VARCHAR(255)');
+    dbAddColumn($pdo, 'news', 'tags', 'VARCHAR(255)');
+    dbAddColumn($pdo, 'news', 'category', "VARCHAR(100) DEFAULT 'Technology'");
+    dbAddColumn($pdo, 'news', 'excerpt', 'TEXT');
+    dbAddColumn($pdo, 'products', 'rating', 'DECIMAL(3,2) DEFAULT 0.00');
+    dbAddColumn($pdo, 'products', 'review_count', 'INT DEFAULT 0');
+    dbAddColumn($pdo, 'products', 'specs', 'TEXT');
+    dbAddColumn($pdo, 'products', 'cost_price', 'DECIMAL(15,2) DEFAULT 0.00');
     try { $pdo->exec("ALTER TABLE products ADD CONSTRAINT products_name_unique UNIQUE (name);"); } catch (\PDOException $e) {}
     
     // Cập nhật cấu trúc bảng Orders (Đơn hàng)
-    try { $pdo->exec("ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id INT REFERENCES users(id);"); } catch (\PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_phone VARCHAR(20);"); } catch (\PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_address TEXT;"); } catch (\PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50);"); } catch (\PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE orders ADD COLUMN IF NOT EXISTS is_installment BOOLEAN DEFAULT FALSE;"); } catch (\PDOException $e) {}
+    dbAddColumn($pdo, 'orders', 'user_id', 'INT REFERENCES users(id)');
+    dbAddColumn($pdo, 'orders', 'customer_phone', 'VARCHAR(20)');
+    dbAddColumn($pdo, 'orders', 'customer_address', 'TEXT');
+    dbAddColumn($pdo, 'orders', 'payment_method', 'VARCHAR(50)');
+    dbAddColumn($pdo, 'orders', 'is_installment', 'BOOLEAN DEFAULT FALSE');
+    dbAddColumn($pdo, 'orders', 'shipping_fee', 'DECIMAL(15,2) DEFAULT 0.00');
+    dbAddColumn($pdo, 'orders', 'shipping_code', 'VARCHAR(50)');
+    dbAddColumn($pdo, 'orders', 'payment_status', "VARCHAR(20) DEFAULT 'Unpaid'");
+    dbAddColumn($pdo, 'orders', 'profit', 'DECIMAL(15,2) DEFAULT 0.00');
     
-// Thêm cột session_id cho bảng cart_items nếu chưa có (để tương thích với guest users)
-    try { $pdo->exec("ALTER TABLE cart_items ADD COLUMN IF NOT EXISTS session_id VARCHAR(255);"); } catch (\PDOException $e) {}
+    // Cập nhật chi tiết mặt hàng đơn hàng
+    dbAddColumn($pdo, 'order_items', 'imei', 'VARCHAR(255)');
+    try {
+        $pdo->exec("ALTER TABLE order_items MODIFY COLUMN imei VARCHAR(255)");
+    } catch (\PDOException $e) {}
+
+    // Thêm cột session_id cho bảng cart_items nếu chưa có (để tương thích với guest users)
+    dbAddColumn($pdo, 'cart_items', 'session_id', 'VARCHAR(255)');
     
     // Đảm bảo có bảng Giỏ hàng (Cart Items) với cấu trúc đúng
     try { $pdo->exec("
@@ -249,10 +280,10 @@ try {
     "); } catch (\PDOException $e) {}
 
     // Bổ sung cột bị thiếu trên bảng warranties legacy
-    try { $pdo->exec("ALTER TABLE warranties ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;"); } catch (\PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE warranties ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255);"); } catch (\PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE warranties ADD COLUMN IF NOT EXISTS customer_phone VARCHAR(20);"); } catch (\PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE warranties ADD COLUMN IF NOT EXISTS order_id INT REFERENCES orders(id) ON DELETE SET NULL;"); } catch (\PDOException $e) {}
+    dbAddColumn($pdo, 'warranties', 'created_at', 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
+    dbAddColumn($pdo, 'warranties', 'customer_name', 'VARCHAR(255)');
+    dbAddColumn($pdo, 'warranties', 'customer_phone', 'VARCHAR(20)');
+    dbAddColumn($pdo, 'warranties', 'order_id', 'INT REFERENCES orders(id) ON DELETE SET NULL');
 
     // Đảm bảo có bảng Lịch sử Sửa chữa (Repair History)
     try { $pdo->exec("
@@ -269,10 +300,12 @@ try {
     "); } catch (\PDOException $e) {}
 
     // Bổ sung cột hồ sơ người dùng (profile)
-    try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone   VARCHAR(20);");  } catch (\PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS address TEXT;");         } catch (\PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(20) DEFAULT 'user';"); } catch (\PDOException $e) {}
-    try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active';"); } catch (\PDOException $e) {}
+    dbAddColumn($pdo, 'users', 'phone', 'VARCHAR(20)');
+    dbAddColumn($pdo, 'users', 'address', 'TEXT');
+    dbAddColumn($pdo, 'users', 'role', "VARCHAR(20) DEFAULT 'user'");
+    dbAddColumn($pdo, 'users', 'status', "VARCHAR(20) DEFAULT 'active'");
+    dbAddColumn($pdo, 'users', 'loyalty_points', 'INT DEFAULT 0');
+    dbAddColumn($pdo, 'users', 'membership_tier', "VARCHAR(20) DEFAULT 'Bronze'");
 
     // Đảm bảo có bảng Danh sách Yêu thích (Wishlists)
     try { $pdo->exec("
@@ -283,6 +316,51 @@ try {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE (user_id, product_id)
         );
+    "); } catch (\PDOException $e) {}
+
+    // Đảm bảo có bảng Subscribers (Đăng ký nhận tin)
+    try { $pdo->exec("
+        CREATE TABLE IF NOT EXISTS subscribers (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            email VARCHAR(255) NOT NULL UNIQUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    "); } catch (\PDOException $e) {}
+
+    // Đảm bảo có bảng Return Requests (Yêu cầu trả hàng)
+    try { $pdo->exec("
+        CREATE TABLE IF NOT EXISTS return_requests (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            order_id INT NOT NULL,
+            user_id INT NOT NULL,
+            customer_name VARCHAR(255) NOT NULL,
+            customer_phone VARCHAR(20),
+            order_code VARCHAR(50),
+            reason_type VARCHAR(100),
+            reason TEXT NOT NULL,
+            images TEXT,
+            status VARCHAR(50) NOT NULL DEFAULT 'Cho duyet',
+            admin_note TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX (order_id),
+            INDEX (user_id),
+            CONSTRAINT return_requests_order_fk FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+            CONSTRAINT return_requests_user_fk FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    "); } catch (\PDOException $e) {}
+
+    // Đảm bảo có bảng Quản lý IMEI (Imeis)
+    try { $pdo->exec("
+        CREATE TABLE IF NOT EXISTS imeis (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            product_id INT NOT NULL,
+            imei VARCHAR(20) NOT NULL UNIQUE,
+            status VARCHAR(20) NOT NULL DEFAULT 'Available',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX (product_id),
+            CONSTRAINT imeis_product_fk FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     "); } catch (\PDOException $e) {}
 
     // Đảm bảo email trong bảng users là UNIQUE (phòng trường hợp migration cũ)
@@ -379,11 +457,11 @@ try {
     "); } catch (\PDOException $e) {}
 
     // Thêm cột username cho bảng users nếu chưa có (để tương thích)
-    try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(50);"); } catch (\PDOException $e) {}
+    dbAddColumn($pdo, 'users', 'username', 'VARCHAR(50)');
     try { $pdo->exec("ALTER TABLE users ADD CONSTRAINT users_username_unique UNIQUE (username);"); } catch (\PDOException $e) {}
-
+ 
     // Thêm cột reset_status cho bảng users để track password reset requests
-    try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_password_reset TIMESTAMP;"); } catch (\PDOException $e) {}
+    dbAddColumn($pdo, 'users', 'last_password_reset', 'TIMESTAMP NULL');
 
     // Đảm bảo có bảng Lưu trữ Lịch sử Thao tác Admin (Admin Logs)
     try { $pdo->exec("
@@ -436,6 +514,33 @@ try {
     } catch (\PDOException $e) {
         error_log("[DB] Chatbot Rules creation error: " . $e->getMessage());
     }
+
+    // ── Bảng Mã Giảm Giá (Coupons / Promo Codes) ──────────────────────────────
+    try { $pdo->exec("
+        CREATE TABLE IF NOT EXISTS coupons (
+            id               INT AUTO_INCREMENT PRIMARY KEY,
+            code             VARCHAR(50)  NOT NULL UNIQUE,
+            discount_percent DECIMAL(5,2) NOT NULL,
+            valid_until      DATE         NOT NULL,
+            is_active        BOOLEAN      DEFAULT TRUE,
+            created_at       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+        );
+    "); } catch (\PDOException $e) {}
+
+    // Chèn mã mẫu nếu bảng còn trống
+    try {
+        $couponCount = (int)$pdo->query("SELECT COUNT(*) FROM coupons")->fetchColumn();
+        if ($couponCount === 0) {
+            $pdo->exec("
+                INSERT INTO coupons (code, discount_percent, valid_until, is_active) VALUES
+                ('WELCOME10',  10.00, '2026-12-31', TRUE),
+                ('SUMMER20',   20.00, '2026-08-31', TRUE),
+                ('NHK50',      50.00, '2026-07-01', TRUE),
+                ('SALE5',       5.00, '2026-09-30', TRUE)
+                ON DUPLICATE KEY UPDATE code = code;
+            ");
+        }
+    } catch (\PDOException $e) {}
 
 } catch (\PDOException $e) {
     error_log("[DB] Schema management error: " . $e->getMessage());

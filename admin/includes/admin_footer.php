@@ -10,9 +10,17 @@
             <i class="bi bi-phone"></i>
             <span>Sản phẩm</span>
         </a>
+        <a href="orders.php" class="nav-item <?php echo $current_page == 'orders.php' ? 'active' : ''; ?>">
+            <i class="bi bi-receipt"></i>
+            <span>Đơn hàng</span>
+        </a>
         <a href="users.php" class="nav-item <?php echo $current_page == 'users.php' ? 'active' : ''; ?>">
             <i class="bi bi-people"></i>
             <span>Khách hàng</span>
+        </a>
+        <a href="revenue.php" class="nav-item <?php echo $current_page == 'revenue.php' ? 'active' : ''; ?>">
+            <i class="bi bi-graph-up"></i>
+            <span>Doanh thu</span>
         </a>
     </nav>
 

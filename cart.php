@@ -158,11 +158,61 @@ $cartItems = isset($_SESSION['cart']) ? $_SESSION['cart'] : [];
                                     <span class="text-muted">Giao hàng</span>
                                     <span class="text-success fw-bold">Miễn phí</span>
                                 </div>
-                                <hr class="my-4">
-                                <div class="d-flex justify-content-between mb-5">
-                                    <h4 class="fw-bold">Tổng tiền</h4>
-                                    <h4 class="fw-bold text-primary"><?php echo number_format($total, 0, ',', '.'); ?>₫</h4>
+
+                                <!-- ── Discount Row (toggled via CSS/JS) ──────────────── -->
+                                <?php
+                                $couponInfo = $_SESSION['applied_coupon'] ?? null;
+                                $hasCoupon  = ($couponInfo !== null);
+                                $displayTotal = $hasCoupon ? $couponInfo['new_total'] : $total;
+                                ?>
+                                <div class="d-flex justify-content-between mb-3" id="discount-row" <?php if (!$hasCoupon) echo 'style="display:none;"'; ?>>
+                                    <span class="text-muted d-flex align-items-center">
+                                        Giảm giá 
+                                        <span class="badge bg-success ms-2" id="applied-code-badge">
+                                            <?php echo $hasCoupon ? $couponInfo['discount_percent'] . '%' : ''; ?>
+                                        </span>
+                                    </span>
+                                    <span class="text-success fw-bold" id="discount-amount-display">
+                                        <?php echo $hasCoupon ? '-' . number_format($couponInfo['discount_amount'], 0, ',', '.') . '₫' : '0₫'; ?>
+                                    </span>
                                 </div>
+                                <!-- ── End Discount Row ──────────────────────────────── -->
+
+                                <hr class="my-4">
+                                <div class="d-flex justify-content-between mb-4">
+                                    <h4 class="fw-bold">Tổng tiền</h4>
+                                    <h4 class="fw-bold text-primary" id="cart-total-display"><?php echo number_format($displayTotal, 0, ',', '.'); ?>₫</h4>
+                                </div>
+
+                                <!-- ── Coupon Section ─────────────────────────────────── -->
+                                <div class="mb-4 bg-white p-3 rounded-3 border">
+                                    <label class="form-label small fw-bold text-muted text-uppercase mb-2">Mã giảm giá</label>
+                                    
+                                    <!-- Input group (shown when no coupon applied) -->
+                                    <div class="input-group input-group-sm <?php if ($hasCoupon) echo 'd-none'; ?>" id="coupon-input-group">
+                                        <input type="text" id="coupon-input" class="form-control rounded-start-pill border-light ps-3" placeholder="Nhập mã (e.g. WELCOME10)">
+                                        <button class="btn btn-dark rounded-end-pill px-3" type="button" id="apply-coupon-btn">
+                                            <span id="apply-btn-text">Áp dụng</span>
+                                            <span class="spinner-border spinner-border-sm d-none" id="apply-btn-spinner" role="status"></span>
+                                        </button>
+                                    </div>
+
+                                    <!-- Applied coupon alert (shown when coupon applied) -->
+                                    <div class="d-flex align-items-center justify-content-between <?php if (!$hasCoupon) echo 'd-none'; ?>" id="remove-coupon-wrap">
+                                        <div class="small fw-bold text-success">
+                                            <i class="bi bi-tag-fill me-1"></i>
+                                            Mã: <span id="active-coupon-code" class="text-uppercase"><?php echo $hasCoupon ? htmlspecialchars($couponInfo['code']) : ''; ?></span>
+                                        </div>
+                                        <button class="btn btn-link btn-sm text-danger text-decoration-none fw-bold p-0" type="button" id="remove-coupon-btn">
+                                            <i class="bi bi-x-circle-fill"></i> Gỡ
+                                        </button>
+                                    </div>
+
+                                    <!-- Feedback message -->
+                                    <div id="coupon-feedback" class="mt-2 small d-none"></div>
+                                </div>
+                                <!-- ── End Coupon Section ─────────────────────────────── -->
+
                                 <a href="checkout.php" class="btn-main btn-primary w-100 py-3">Tiến hành đặt hàng</a>
                                 <p class="text-center text-muted small mt-3">Đã bao gồm thuế GTGT (nếu có)</p>
                             </div>
@@ -173,5 +223,155 @@ $cartItems = isset($_SESSION['cart']) ? $_SESSION['cart'] : [];
         </div>
     </section>
 </main>
+
+<!-- ══════════════════════════════════════════════════════════════
+     COUPON AJAX JAVASCRIPT
+     ══════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+    'use strict';
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+    /**
+     * Format a number to Vietnamese currency style: 1,234,567₫
+     * @param {number} value
+     * @returns {string}
+     */
+    function formatVND(value) {
+        return Math.round(value).toLocaleString('vi-VN') + '₫';
+    }
+
+    // Original cart total from PHP (raw number, no formatting)
+    const ORIGINAL_TOTAL = <?php echo json_encode($total); ?>;
+
+    // ── DOM references ─────────────────────────────────────────────────────────
+    const inputEl         = document.getElementById('coupon-input');
+    const applyBtn        = document.getElementById('apply-coupon-btn');
+    const applyBtnText    = document.getElementById('apply-btn-text');
+    const applySpinner    = document.getElementById('apply-btn-spinner');
+    const feedbackEl      = document.getElementById('coupon-feedback');
+    const discountRow     = document.getElementById('discount-row');
+    const discountDisplay = document.getElementById('discount-amount-display');
+    const totalDisplay    = document.getElementById('cart-total-display');
+    const removeCouponWrap= document.getElementById('remove-coupon-wrap');
+    const removeBtn       = document.getElementById('remove-coupon-btn');
+    const appliedBadge    = document.getElementById('applied-code-badge');
+
+    if (!applyBtn) return; // Guard: only run when cart has items
+
+    // ── Show feedback message ──────────────────────────────────────────────────
+    function showFeedback(message, type) {
+        // type: 'success' | 'danger' | 'warning'
+        feedbackEl.className = 'mt-2 small alert alert-' + type + ' py-2 px-3 rounded-3';
+        feedbackEl.textContent = message;
+        feedbackEl.classList.remove('d-none');
+    }
+
+    function hideFeedback() {
+        feedbackEl.classList.add('d-none');
+    }
+
+    // ── Set loading state ──────────────────────────────────────────────────────
+    function setLoading(loading) {
+        applyBtn.disabled  = loading;
+        inputEl.disabled   = loading;
+        applyBtnText.textContent = loading ? '' : 'Áp dụng';
+        applySpinner.classList.toggle('d-none', !loading);
+    }
+
+    // ── Apply coupon via AJAX ──────────────────────────────────────────────────
+    applyBtn.addEventListener('click', function () {
+        const code = inputEl.value.trim().toUpperCase();
+
+        if (!code) {
+            showFeedback('Vui lòng nhập mã giảm giá.', 'warning');
+            inputEl.focus();
+            return;
+        }
+
+        hideFeedback();
+        setLoading(true);
+
+        const formData = new FormData();
+        formData.append('coupon_code', code);
+        formData.append('cart_total', ORIGINAL_TOTAL);
+
+        fetch('php/apply_coupon.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function (response) {
+            if (!response.ok) throw new Error('Network error: ' + response.status);
+            return response.json();
+        })
+        .then(function (data) {
+            setLoading(false);
+
+            if (data.success) {
+                // ── Update UI with discount info ───────────────────────────────
+                showFeedback(data.message, 'success');
+
+                // Show discount row
+                discountRow.style.removeProperty('display');
+                discountDisplay.textContent  = '-' + formatVND(data.discount_amount);
+                appliedBadge.textContent      = data.discount_percent + '%';
+
+                // Update total
+                totalDisplay.textContent = formatVND(data.new_total);
+
+                // Animate total
+                totalDisplay.classList.add('fw-bolder');
+                totalDisplay.style.transition = 'color 0.4s';
+                totalDisplay.style.color = '#198754'; // green flash
+                setTimeout(function () {
+                    totalDisplay.style.color = '';
+                }, 1200);
+
+                // Show remove button & hide input group
+                removeCouponWrap.classList.remove('d-none');
+                document.getElementById('coupon-input-group').classList.add('d-none');
+
+            } else {
+                // ── Show error ────────────────────────────────────────────────
+                showFeedback(data.message, 'danger');
+                inputEl.focus();
+            }
+        })
+        .catch(function (err) {
+            setLoading(false);
+            showFeedback('Có lỗi xảy ra. Vui lòng thử lại.', 'danger');
+            console.error('[Coupon AJAX]', err);
+        });
+    });
+
+    // ── Allow pressing Enter in the input ─────────────────────────────────────
+    inputEl.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') applyBtn.click();
+    });
+
+    // ── Remove coupon ──────────────────────────────────────────────────────────
+    removeBtn.addEventListener('click', function () {
+        // Reset UI
+        discountRow.style.display    = 'none';
+        totalDisplay.textContent     = formatVND(ORIGINAL_TOTAL);
+        inputEl.value                = '';
+        appliedBadge.textContent     = '';
+
+        removeCouponWrap.classList.add('d-none');
+        document.getElementById('coupon-input-group').classList.remove('d-none');
+        hideFeedback();
+
+        // Clear session via a lightweight GET request
+        fetch('php/apply_coupon.php?remove=1').catch(function () {});
+    });
+
+    // ── Auto-uppercase while typing ────────────────────────────────────────────
+    inputEl.addEventListener('input', function () {
+        const pos = this.selectionStart;
+        this.value = this.value.toUpperCase();
+        this.setSelectionRange(pos, pos);
+    });
+})();
+</script>
 
 <?php include 'includes/footer.php'; ?>

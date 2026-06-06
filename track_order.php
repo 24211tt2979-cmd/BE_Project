@@ -135,6 +135,106 @@ include 'includes/header.php';
                             </div>
                         </div>
 
+                        <?php
+                        /* ─────────────────────────────────────────────────────────────
+                         * ORDER TRACKING TIMELINE — Status Logic
+                         *
+                         * Map the actual DB status string to a numeric step (1–4).
+                         * Steps: 1=Chờ duyệt  2=Đã duyệt  3=Đang giao  4=Hoàn thành
+                         * Special: Đã hủy renders a cancelled state overlay.
+                         *
+                         * CSS rules applied per step:
+                         *   step index < $current_step  → class="completed"
+                         *   step index === $current_step → class="active"
+                         *   step index > $current_step  → (no extra class = pending/gray)
+                         * ───────────────────────────────────────────────────────────── */
+                        $raw_status    = $order['status'] ?? 'Chờ duyệt';
+                        $is_cancelled  = ($raw_status === 'Đã hủy');
+
+                        switch ($raw_status) {
+                            case 'Đã duyệt':
+                            case 'Processing': $current_step = 2; break;
+                            case 'Đang giao':
+                            case 'Shipped':    $current_step = 3; break;
+                            case 'Hoàn thành':
+                            case 'Completed':  $current_step = 4; break;
+                            case 'Đã hủy':     $current_step = 0; break; // cancelled — no step active
+                            default:           $current_step = 1; break; // Chờ duyệt / Pending
+                        }
+
+                        /**
+                         * Returns the CSS class string for a given step index.
+                         * @param int $step         The step's position (1-based)
+                         * @param int $current      The currently active step
+                         * @param bool $cancelled   Whether the order is cancelled
+                         */
+                        if (!function_exists('tl_class')) {
+                            function tl_class(int $step, int $current, bool $cancelled): string {
+                                if ($cancelled) return $step === 1 ? 'cancelled' : '';  // only first node turns red
+                                if ($step < $current)  return 'completed';
+                                if ($step === $current) return 'active';
+                                return '';   // pending — gray
+                            }
+                        }
+
+                        /**
+                         * Returns the icon class for a given step.
+                         * Completed steps show a checkmark; active/pending show the step icon.
+                         */
+                        if (!function_exists('tl_icon')) {
+                            function tl_icon(int $step, int $current, bool $cancelled, string $default_icon): string {
+                                if (!$cancelled && $step < $current) return 'bi-check-lg';
+                                return $default_icon;
+                            }
+                        }
+
+                        $steps = [
+                            1 => ['title' => 'Chờ xác nhận', 'sub' => 'Đơn đã đặt',      'icon' => 'bi-bag-check'],
+                            2 => ['title' => 'Đã đóng gói',  'sub' => 'Chuẩn bị hàng',   'icon' => 'bi-box-seam'],
+                            3 => ['title' => 'Đang giao',    'sub' => 'Trên đường đến',   'icon' => 'bi-truck'],
+                            4 => ['title' => 'Hoàn thành',   'sub' => 'Đã nhận hàng',     'icon' => 'bi-house-check'],
+                        ];
+                        ?>
+
+                        <!-- ╔══════════════════════════════════════════════════════╗ -->
+                        <!-- ║         ORDER TRACKING TIMELINE COMPONENT           ║ -->
+                        <!-- ╚══════════════════════════════════════════════════════╝ -->
+                        <div class="order-timeline-wrapper no-print">
+                            <div class="tl-heading">
+                                <i class="bi bi-geo-alt-fill text-primary"></i>
+                                Tiến trình đơn hàng
+                            </div>
+
+                            <div class="order-timeline" role="list" aria-label="Tiến trình đơn hàng">
+                                <?php foreach ($steps as $step_num => $step): ?>
+                                <div class="tl-step <?php echo tl_class($step_num, $current_step, $is_cancelled); ?>"
+                                     role="listitem"
+                                     aria-current="<?php echo ($step_num === $current_step && !$is_cancelled) ? 'step' : 'false'; ?>">
+
+                                    <!-- Circular node with icon -->
+                                    <div class="tl-node" aria-hidden="true">
+                                        <i class="bi <?php echo tl_icon($step_num, $current_step, $is_cancelled, $step['icon']); ?>"></i>
+                                    </div>
+
+                                    <!-- Label -->
+                                    <div class="tl-label">
+                                        <span class="tl-label-title"><?php echo $step['title']; ?></span>
+                                        <span class="tl-label-sub"><?php echo $step['sub']; ?></span>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+
+                            <?php if ($is_cancelled): ?>
+                            <!-- Red cancelled notice shown below the timeline -->
+                            <div class="tl-cancelled-banner" role="alert">
+                                <i class="bi bi-x-circle-fill fs-5"></i>
+                                <span>Đơn hàng này đã bị hủy. Nếu bạn đã thanh toán, vui lòng liên hệ hotline <strong>1800 1234</strong> để được hoàn tiền.</span>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                        <!-- END ORDER TRACKING TIMELINE -->
+
                         <div class="order-items mb-5">
                             <table class="table table-borderless align-middle">
                                 <thead class="border-bottom">

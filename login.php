@@ -49,9 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     elseif (empty($email_or_user) || empty($password)) {
         $error = "Vui lòng nhập đầy đủ tài khoản và mật khẩu.";
     } else {
-        // Try to find user by email OR username
-        $stmt = $pdo->prepare("SELECT id, fullname, email, password, status FROM users WHERE email = ? OR fullname = ?");
-        $stmt->execute([$email_or_user, $email_or_user]);
+        // Try to find user by email, username, OR fullname
+        $stmt = $pdo->prepare("SELECT id, fullname, email, password, status, role FROM users WHERE email = ? OR username = ? OR fullname = ?");
+        $stmt->execute([$email_or_user, $email_or_user, $email_or_user]);
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password'])) {
@@ -90,6 +90,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['user_email']    = $user['email'];
                     $_SESSION['last_activity'] = time();
                     
+                    // =========================================================
+                    // HYBRID CART MERGE — Gộp giỏ hàng khách vào tài khoản
+                    // Chạy ngay sau khi xác thực thành công, TRƯỚC khi redirect.
+                    // =========================================================
+                    if (!empty($_SESSION['cart']) && is_array($_SESSION['cart'])) {
+                        $merge_user_id = (int)$user['id'];
+
+                        // Chuẩn bị câu lệnh một lần, tái sử dụng cho từng sản phẩm
+                        // ON DUPLICATE KEY: cộng dồn số lượng thay vị ghi đè
+                        $merge_stmt = $pdo->prepare("
+                            INSERT INTO cart_items (user_id, product_id, quantity)
+                            VALUES (:user_id, :product_id, :qty)
+                            ON DUPLICATE KEY UPDATE
+                                quantity = quantity + VALUES(quantity)
+                        ");
+
+                        foreach ($_SESSION['cart'] as $product_id => $item) {
+                            $product_id  = (int)$product_id;
+                            $qty_to_add  = (int)($item['qty'] ?? 1);
+
+                            // Bỏ qua các mục dữ liệu bất hợp lệ
+                            if ($product_id <= 0 || $qty_to_add <= 0) {
+                                continue;
+                            }
+
+                            try {
+                                $merge_stmt->execute([
+                                    ':user_id'    => $merge_user_id,
+                                    ':product_id' => $product_id,
+                                    ':qty'        => $qty_to_add,
+                                ]);
+                            } catch (PDOException $e) {
+                                error_log("[Cart Merge] Failed for product #$product_id (user #$merge_user_id): " . $e->getMessage());
+                            }
+                        }
+
+                        // Xóa giỏ hàng khách sau khi đã gộp thành công
+                        unset($_SESSION['cart']);
+                    }
+                    // =========================================================
+                    // KẾT THÚC HYBRID CART MERGE
+                    // =========================================================
+
                     log_auth_attempt('login', $email_or_user, true, 'User login successful');
                     header("Location: " . $redirect);
                     exit;

@@ -1,9 +1,26 @@
 <?php
-// Khởi động session trước khi include (auth_functions.php dùng session_status nên an toàn)
-if (session_status() === PHP_SESSION_NONE)
-    require_once '../includes/auth_functions.php';
-require_once '../includes/db.php';
+/**
+ * NHK Mobile - Reviews API
+ *
+ * GET  api/reviews.php?id={product_id}[&page=1&limit=5]
+ *   → Trả về JSON: meta (avg_rating, total, breakdown) + mảng reviews
+ *
+ * POST api/reviews.php
+ *   → Yêu cầu đăng nhập. Chèn đánh giá mới, cập nhật avg trên bảng products.
+ *   Body (FormData): product_id, rating (1-5), title, content [, image]
+ *
+ * SQL quan trọng (GET):
+ *   SELECT COUNT(*) as total, AVG(rating) as avg_rating FROM reviews WHERE product_id = ?
+ *
+ * SQL quan trọng (POST):
+ *   INSERT INTO reviews (product_id, user_id, reviewer_name, reviewer_email,
+ *                        rating, title, content, verified_purchase, image)
+ *   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+ */
+
+// auth_functions.php khởi tạo session; chỉ cần require một lần
 require_once '../includes/auth_functions.php';
+require_once '../includes/db.php';
 
 // Cấu hình Header CORS & JSON
 header("Access-Control-Allow-Origin: *");
@@ -68,7 +85,7 @@ if ($method === 'GET') {
         $stmtMeta->execute([$product_id]);
         $meta = $stmtMeta->fetch();
 
-        $verifiedSelect = "0 AS verified_purchase";
+        $verifiedSelect = $hasVerifiedPurchase ? "r.verified_purchase" : "0 AS verified_purchase";
         $imageSelect = $hasReviewImage ? "r.image" : "NULL AS image";
         $stmt = $pdo->prepare("
             SELECT r.id, r.rating, r.title, r.content, r.created_at,
@@ -118,7 +135,21 @@ if ($method === 'GET') {
 }
 
 if ($method === 'POST') {
-    // Hỗ trợ cả JSON và FormData
+    // ── Bắt buộc đăng nhập để gửi đánh giá ────────────────────────────────────
+    // Kiểm tra session TRƯỚC KHI đọc bất kỳ dữ liệu nào từ form.
+    // Nếu chưa đăng nhập → trả về JSON chứa cờ must_login và URL redirect.
+    if (!is_logged_in()) {
+        $currentUrl = 'product-detail.php?id=' . intval($_POST['product_id'] ?? 0);
+        echo json_encode([
+            'success'    => false,
+            'must_login' => true,
+            'redirect'   => 'login.php?redirect=' . urlencode($currentUrl),
+            'error'      => 'Bạn cần đăng nhập để gửi đánh giá.',
+        ]);
+        exit;
+    }
+
+    // ── Đọc dữ liệu từ FormData hoặc JSON body ─────────────────────────────────
     if (isset($_SERVER["CONTENT_TYPE"]) && strpos($_SERVER["CONTENT_TYPE"], "application/json") !== false) {
         $data = json_decode(file_get_contents('php://input'), true) ?? [];
     } else {
@@ -126,14 +157,15 @@ if ($method === 'POST') {
     }
 
     $product_id = isset($data['product_id']) ? intval($data['product_id']) : 0;
-    $rating = isset($data['rating']) ? intval($data['rating']) : 0;
-    $title = htmlspecialchars(trim($data['title'] ?? ''), ENT_QUOTES, 'UTF-8');
-    $content = htmlspecialchars(trim($data['content'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $rating     = isset($data['rating'])     ? intval($data['rating'])     : 0;
+    $title      = htmlspecialchars(trim($data['title']   ?? ''), ENT_QUOTES, 'UTF-8');
+    $content    = htmlspecialchars(trim($data['content'] ?? ''), ENT_QUOTES, 'UTF-8');
 
-    $logged_in_user_id = get_logged_in_user_id(); // Chỉ trả về id nếu là user thường
-    $is_logged_in = is_logged_in();               // Trả về true cho cả user lẫn admin
-    $reviewer_name = $is_logged_in ? get_logged_in_name() : htmlspecialchars(trim($data['reviewer_name'] ?? ''), ENT_QUOTES, 'UTF-8');
-    $reviewer_email = htmlspecialchars(trim($data['reviewer_email'] ?? ''), ENT_QUOTES, 'UTF-8');
+    // Vì đã xác nhận đăng nhập ở trên, lấy thông tin từ session.
+    $logged_in_user_id = get_logged_in_user_id(); // int|null (null nếu là admin)
+    $is_logged_in      = true;                    // Đã kiểm tra ở trên
+    $reviewer_name     = get_logged_in_name();    // Lấy tên từ session
+    $reviewer_email    = htmlspecialchars(trim($data['reviewer_email'] ?? ''), ENT_QUOTES, 'UTF-8');
 
     if (!$product_id) {
         echo json_encode(['success' => false, 'error' => 'Thiếu product_id']);
@@ -147,14 +179,10 @@ if ($method === 'POST') {
         echo json_encode(['success' => false, 'error' => 'Nội dung đánh giá quá ngắn']);
         exit;
     }
-    if (!$is_logged_in && empty($reviewer_name)) {
-        echo json_encode(['success' => false, 'error' => 'Vui lòng nhập tên']);
-        exit;
-    }
 
     try {
-        $verified = $is_logged_in ? 1 : 0;     // Cả user và admin đều là verified
-        $user_id_val = $logged_in_user_id ?: null; // Chỉ lưu user_id nếu là user thường (admin = null)
+        $verified    = 1;                          // Chỉ user đăng nhập mới vào được đây
+        $user_id_val = $logged_in_user_id ?: null; // null nếu là admin
 
         // Xử lý upload ảnh
         $imageFilename = null;

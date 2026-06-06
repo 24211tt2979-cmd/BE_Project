@@ -9,7 +9,6 @@
  * Version: 2.2
  * Date: 2026-04-08
  */
-$footerSettings = isset($pdo) ? get_system_settings($pdo) : [];
 ?>
 <footer class="footer-new bg-light mt-5 border-top">
         <div class="container-wide py-5">
@@ -38,8 +37,8 @@ $footerSettings = isset($pdo) ? get_system_settings($pdo) : [];
                     <ul class="footer-links list-unstyled accordion-content-mobile">
                         <li><a href="product.php?category=Apple">iPhone Series</a></li>
                         <li><a href="product.php?category=Samsung">Samsung Galaxy</a></li>
-                        <li><a href="product.php">Phụ kiện cao cấp</a></li>
-                        <li><a href="index.php">Khám phá ngay</a></li>
+                        <li><a href="product.php">Sản phẩm cao cấp</a></li>
+                        <li><a href="news.php">Tin tức công nghệ</a></li>
                     </ul>
                 </div>
                 
@@ -50,7 +49,7 @@ $footerSettings = isset($pdo) ? get_system_settings($pdo) : [];
                         <i class="bi bi-plus-lg d-md-none toggle-icon"></i>
                     </div>
                     <ul class="footer-links list-unstyled accordion-content-mobile">
-                        <li><a href="profile.php">Tài khoản của tôi</a></li>
+                        <li><a href="warranty.php">Trung tâm Bảo hành</a></li>
                         <li><a href="track_order.php"><?php echo isset($_SESSION['user_id']) ? 'Đơn hàng của tôi' : 'Tình trạng đơn hàng'; ?></a></li>
                         <li><a href="#">Giao hàng tận nơi</a></li>
                         <li><a href="#">Hình thức thanh toán</a></li>
@@ -181,6 +180,45 @@ $footerSettings = isset($pdo) ? get_system_settings($pdo) : [];
         </div>
     </div>
 
+    <!-- Live Chat Widget -->
+    <div class="live-chat-widget">
+        <div class="live-chat-window" id="liveChatWindow">
+            <div class="live-chat-header">
+                <h5><span class="live-chat-status"></span> Hỗ trợ trực tuyến</h5>
+                <button class="live-chat-close" onclick="toggleLiveChat()">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="live-chat-body" id="chatBody">
+                <div class="chat-message">
+                    <div class="chat-avatar"><i class="bi bi-headset"></i></div>
+                    <div>
+                        <div class="chat-bubble">Xin chào! Em là trợ lý NHK Mobile 🤖<br>Em có thể tra giá, kiểm tra tồn kho, thông số sản phẩm theo dữ liệu thực tế nhé!</div>
+                        <div class="chat-time">Vừa xong</div>
+                    </div>
+                </div>
+                <!-- Gợi ý nhanh -->
+                <div class="chat-quick-actions" id="chatQuickActions">
+                    <button onclick="sendQuickMsg('Điện thoại nổi bật nhất')">🔥 Nổi bật</button>
+                    <button onclick="sendQuickMsg('Điện thoại rẻ nhất')">💸 Rẻ nhất</button>
+                    <button onclick="sendQuickMsg('Có những hãng nào')">📊 Danh mục</button>
+                    <button onclick="sendQuickMsg('iPhone đang có')">📱 iPhone</button>
+                    <button onclick="sendQuickMsg('Samsung đang bán')">📱 Samsung</button>
+                </div>
+            </div>
+            <div class="live-chat-footer">
+                <div class="live-chat-input-group">
+                    <input type="text" class="live-chat-input" id="chatInput" placeholder="Nhập tin nhắn..." onkeypress="handleChatKeypress(event)">
+                    <button class="live-chat-send" onclick="sendChatMessage()">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <button class="live-chat-button" id="liveChatBtn" onclick="toggleLiveChat()">
+            <i class="bi bi-chat-dots-fill"></i>
+        </button>
+    </div>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -442,6 +480,167 @@ $footerSettings = isset($pdo) ? get_system_settings($pdo) : [];
             }
         });
 
+        // Live Chat Functions
+        let chatOpen = false;
+        let chatHistory = []; // Lưu lịch sử để AI có ngữ cảnh
+        let chatIsSending = false;
+
+        function toggleLiveChat() {
+            const win = document.getElementById('liveChatWindow');
+            const btn = document.getElementById('liveChatBtn');
+            chatOpen = !chatOpen;
+
+            if (chatOpen) {
+                win.classList.add('active');
+                btn.classList.remove('has-new');
+                setTimeout(() => document.getElementById('chatInput').focus(), 100);
+            } else {
+                win.classList.remove('active');
+            }
+        }
+
+        function addTypingIndicator() {
+            const body = document.getElementById('chatBody');
+            const el = document.createElement('div');
+            el.className = 'chat-message';
+            el.id = 'typingIndicator';
+            el.innerHTML = `
+                <div class="chat-avatar"><i class="bi bi-robot"></i></div>
+                <div>
+                    <div class="chat-bubble" style="padding: 10px 16px;">
+                        <span style="display:inline-flex;gap:4px;align-items:center;">
+                            <span style="width:7px;height:7px;border-radius:50%;background:currentColor;animation:typingDot 1.2s infinite 0s;"></span>
+                            <span style="width:7px;height:7px;border-radius:50%;background:currentColor;animation:typingDot 1.2s infinite 0.2s;"></span>
+                            <span style="width:7px;height:7px;border-radius:50%;background:currentColor;animation:typingDot 1.2s infinite 0.4s;"></span>
+                        </span>
+                    </div>
+                </div>
+            `;
+            body.appendChild(el);
+            body.scrollTop = body.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const el = document.getElementById('typingIndicator');
+            if (el) el.remove();
+        }
+
+        async function sendChatMessage() {
+            if (chatIsSending) return;
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            chatIsSending = true;
+            const body = document.getElementById('chatBody');
+            const time = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+            // Hiện tin nhắn của user
+            body.innerHTML += `
+                <div class="chat-message user">
+                    <div class="chat-avatar user"><i class="bi bi-person"></i></div>
+                    <div>
+                        <div class="chat-bubble">${escapeHtml(message)}</div>
+                        <div class="chat-time">${time}</div>
+                    </div>
+                </div>
+            `;
+            input.value = '';
+            input.disabled = true;
+            document.querySelector('.live-chat-send').disabled = true;
+            body.scrollTop = body.scrollHeight;
+
+            // Lưu vào history
+            chatHistory.push({ role: 'user', content: message });
+
+            // Hiện typing indicator
+            addTypingIndicator();
+
+            try {
+                const res = await fetch(BASE_PATH + 'api/chat.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message, history: chatHistory.slice(-20) })
+                });
+                const data = await res.json();
+                const reply = data.reply || 'Xin lỗi, em không hiểu ý bạn. Bạn có thể nói rõ hơn không ạ? 😊';
+
+                removeTypingIndicator();
+                const replyTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                // Dùng createElement để an toàn và render HTML (link, bold) từ bot
+                const botMsg = document.createElement('div');
+                botMsg.className = 'chat-message';
+                // Chuyển \n thành <br> để xuống hàng đúng
+                const replyHtml = reply.replace(/\n/g, '<br>');
+                botMsg.innerHTML = `
+                    <div class="chat-avatar"><i class="bi bi-robot"></i></div>
+                    <div>
+                        <div class="chat-bubble chat-bubble-html">${replyHtml}</div>
+                        <div class="chat-time">${replyTime}</div>
+                    </div>
+                `;
+                body.appendChild(botMsg);
+                // Lưu reply vào history
+                chatHistory.push({ role: 'assistant', content: reply });
+            } catch (err) {
+                removeTypingIndicator();
+                body.innerHTML += `
+                    <div class="chat-message">
+                        <div class="chat-avatar"><i class="bi bi-robot"></i></div>
+                        <div>
+                            <div class="chat-bubble">Mất kết nối, vui lòng thử lại sau ạ! 🙏</div>
+                            <div class="chat-time">Vừa xong</div>
+                        </div>
+                    </div>
+                `;
+                // Xóa tin nhắn lỗi khỏi history
+                chatHistory.pop();
+            } finally {
+                chatIsSending = false;
+                input.disabled = false;
+                document.querySelector('.live-chat-send').disabled = false;
+                body.scrollTop = body.scrollHeight;
+                input.focus();
+            }
+        }
+
+        function handleChatKeypress(e) {
+            if (e.key === 'Enter' && !e.shiftKey) sendChatMessage();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Gửi tin nhắn gợi ý nhanh
+        function sendQuickMsg(text) {
+            // Ẩn chip sau khi dùng
+            const chips = document.getElementById('chatQuickActions');
+            if (chips) chips.style.display = 'none';
+            document.getElementById('chatInput').value = text;
+            sendChatMessage();
+        }
+
+        // CSS animation cho typing dots
+        (function() {
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes typingDot {
+                    0%, 60%, 100% { opacity: 0.2; transform: scale(0.8); }
+                    30% { opacity: 1; transform: scale(1); }
+                }
+            `;
+            document.head.appendChild(style);
+        })();
+
+        // Thông báo mới sau 20 giây
+        setTimeout(() => {
+            if (!chatOpen) {
+                document.getElementById('liveChatBtn').classList.add('has-new');
+            }
+        }, 20000);
 
         // Recently Viewed Products
         function addToRecentlyViewed(product) {
