@@ -221,6 +221,7 @@ try {
     dbAddColumn($pdo, 'products', 'review_count', 'INT DEFAULT 0');
     dbAddColumn($pdo, 'products', 'specs', 'TEXT');
     dbAddColumn($pdo, 'products', 'cost_price', 'DECIMAL(15,2) DEFAULT 0.00');
+    dbAddColumn($pdo, 'products', 'discount', 'INT DEFAULT 0');
     try { $pdo->exec("ALTER TABLE products ADD CONSTRAINT products_name_unique UNIQUE (name);"); } catch (\PDOException $e) {}
     
     // Cập nhật cấu trúc bảng Orders (Đơn hàng)
@@ -379,10 +380,15 @@ try {
         ('store_name', 'NHK Mobile'),
         ('hotline', '0375 352 347'),
         ('store_email', 'support@nhkmobile.local'),
-        ('store_address', '123 Duong Cong Nghe, Quan 1, TP.HCM'),
-        ('map_embed_url', 'https://www.google.com/maps?q=Ho%20Chi%20Minh%20City&output=embed')
-        ON DUPLICATE KEY UPDATE setting_value = setting_value;
+        ('store_address', '53 Đ. Võ Văn Ngân, Linh Chiểu, Thủ Đức, Hồ Chí Minh'),
+        ('map_embed_url', 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1959.2321549430128!2d106.7574623384661!3d10.852246281568082!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752797e321f8e9%3A0xe04b51a03a866b1!2zNTMgxJAuIFbDtSBWxINuIE5nw6JuLCBQaMaw4budbmcsIFRo4bunIMSQ4bupYywgSOG7kyBDaMOtIE1pbmgsIFZp4buHdCBOYW0!5e0!3m2!1svi!2s!4v1780715985655!5m2!1svi!2s')
+        ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
     "); } catch (\PDOException $e) {}
+
+    try {
+        $pdo->exec("UPDATE system_settings SET setting_value = '53 Đ. Võ Văn Ngân, Linh Chiểu, Thủ Đức, Hồ Chí Minh' WHERE setting_key = 'store_address'");
+        $pdo->exec("UPDATE system_settings SET setting_value = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1959.2321549430128!2d106.7574623384661!3d10.852246281568082!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752797e321f8e9%3A0xe04b51a03a866b1!2zNTMgxJAuIFbDtSBWxINuIE5nw6JuLCBQaMaw4budbmcsIFRo4bunIMSQ4bupYywgSOG7kyBDaMOtIE1pbmgsIFZp4buHdCBOYW0!5e0!3m2!1svi!2s!4v1780715985655!5m2!1svi!2s' WHERE setting_key = 'map_embed_url'");
+    } catch (\PDOException $e) {}
 
     // Bang danh muc rieng de admin co the quan ly thay vi sua code.
     try { $pdo->exec("

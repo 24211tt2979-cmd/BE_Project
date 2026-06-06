@@ -42,7 +42,7 @@ if (isset($_POST['send_update_email'])) {
                  . "</div></div>";
 
         if (function_exists('send_store_mail')) {
-            send_store_mail($pdo, $toEmail, $toName, $subject, $body);
+            send_store_mail($toEmail, $subject, $body, $pdo);
         } else {
             $headers  = "MIME-Version: 1.0\r\n";
             $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
@@ -109,7 +109,7 @@ include 'includes/admin_header.php';
         <header class="d-flex justify-content-between align-items-center mb-5">
             <div>
                  <h2 class="fw-bold mb-1">Quản lý Khách hàng</h2>
-                 <p class="text-secondary small mb-0">Xem danh sách đăng ký, khóa tài khoản vi phạm và gửi email yêu cầu khách tự cập nhật thông tin.</p>
+                 <p class="text-secondary small mb-0">Xem danh sách đăng ký, khóa tài khoản vi phạm và xem chi tiết thông tin khách hàng.</p>
             </div>
         </header>
 
@@ -141,11 +141,6 @@ include 'includes/admin_header.php';
                 </div>
             <?php endif; ?>
 
-            <!-- Ghi chú chính sách -->
-            <div class="alert alert-info border-0 rounded-3 mb-4 d-flex align-items-center gap-2 py-2" style="font-size:13px;">
-                <i class="bi bi-info-circle-fill text-primary"></i>
-                <span>Chính sách: Admin <strong>không chỉnh sửa</strong> thông tin khách hàng trực tiếp. Hãy dùng nút <i class="bi bi-envelope text-primary"></i> để gửi email yêu cầu khách tự cập nhật.</span>
-            </div>
 
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
@@ -220,18 +215,110 @@ include 'includes/admin_header.php';
                                         </button>
                                     <?php endif; ?>
                                 </form>
-                                <!-- Nút Gửi email yêu cầu cập nhật thông tin -->
-                                <form action="users.php" method="POST" style="display: inline-block;"
-                                      onsubmit="return confirm('Gửi email yêu cầu cập nhật thông tin tới <?php echo addslashes(htmlspecialchars($u['email'] ?? '')); ?>?')">
-                                    <input type="hidden" name="user_id" value="<?php echo $u['id']; ?>">
-                                    <button type="submit" name="send_update_email"
-                                            class="btn btn-sm btn-light border p-2 ms-1 rounded-pill"
-                                            title="Gửi email yêu cầu khách cập nhật thông tin">
-                                        <i class="bi bi-envelope text-primary"></i>
-                                    </button>
-                                </form>
+                                <!-- Nút Xem chi tiết thông tin khách hàng -->
+                                <button type="button" 
+                                        class="btn btn-sm btn-light border p-2 ms-1 rounded-pill" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#userDetailModal<?php echo $u['id']; ?>"
+                                        title="Xem thông tin chi tiết">
+                                    <i class="bi bi-eye text-primary"></i>
+                                </button>
                             </td>
                         </tr>
+                        
+                        <!-- Modal Chi tiết khách hàng -->
+                        <div class="modal fade" id="userDetailModal<?php echo $u['id']; ?>" tabindex="-1" aria-labelledby="userDetailModalLabel<?php echo $u['id']; ?>" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow rounded-4">
+                                    <div class="modal-header border-0 bg-light rounded-top-4 py-3">
+                                        <h5 class="modal-title fw-bold text-dark d-flex align-items-center gap-2" id="userDetailModalLabel<?php echo $u['id']; ?>">
+                                            <i class="bi bi-person-badge text-primary"></i> Chi tiết khách hàng
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body p-4 text-start">
+                                        <div class="text-center mb-4">
+                                            <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle mb-3" style="width: 72px; height: 72px;">
+                                                <i class="bi bi-person-fill fs-1"></i>
+                                            </div>
+                                            <h4 class="fw-bold mb-1"><?php echo htmlspecialchars($u['fullname'] ?? ''); ?></h4>
+                                            <span class="badge <?php echo ($u['status'] === 'active' || empty($u['status'])) ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger'; ?> px-3 py-2 rounded-pill fw-normal">
+                                                <?php echo ($u['status'] === 'active' || empty($u['status'])) ? 'Đang hoạt động' : 'Đã khóa'; ?>
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="row g-3">
+                                            <div class="col-12">
+                                                <div class="p-3 bg-light rounded-3 d-flex align-items-center gap-3">
+                                                    <div class="bg-white rounded-3 p-2 text-primary shadow-sm">
+                                                        <i class="bi bi-hash fs-5"></i>
+                                                    </div>
+                                                    <div>
+                                                        <small class="text-secondary d-block">Mã khách hàng</small>
+                                                        <span class="fw-bold text-dark">#USR-<?php echo $u['id']; ?></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-12">
+                                                <div class="p-3 bg-light rounded-3 d-flex align-items-center gap-3">
+                                                    <div class="bg-white rounded-3 p-2 text-primary shadow-sm">
+                                                        <i class="bi bi-envelope fs-5"></i>
+                                                    </div>
+                                                    <div>
+                                                        <small class="text-secondary d-block">Email</small>
+                                                        <a href="mailto:<?php echo htmlspecialchars($u['email'] ?? ''); ?>" class="fw-medium text-decoration-none text-dark"><?php echo htmlspecialchars($u['email'] ?? ''); ?></a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-12">
+                                                <div class="p-3 bg-light rounded-3 d-flex align-items-center gap-3">
+                                                    <div class="bg-white rounded-3 p-2 text-primary shadow-sm">
+                                                        <i class="bi bi-telephone fs-5"></i>
+                                                    </div>
+                                                    <div>
+                                                        <small class="text-secondary d-block">Số điện thoại</small>
+                                                        <?php if (!empty($u['phone'])): ?>
+                                                            <a href="tel:<?php echo htmlspecialchars($u['phone']); ?>" class="fw-medium text-decoration-none text-dark"><?php echo htmlspecialchars($u['phone']); ?></a>
+                                                        <?php else: ?>
+                                                            <span class="text-muted fst-italic">Chưa cập nhật</span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-12">
+                                                <div class="p-3 bg-light rounded-3 d-flex align-items-start gap-3">
+                                                    <div class="bg-white rounded-3 p-2 text-primary shadow-sm mt-1">
+                                                        <i class="bi bi-geo-alt fs-5"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1">
+                                                        <small class="text-secondary d-block">Địa chỉ giao hàng</small>
+                                                        <span class="fw-medium text-dark"><?php echo !empty($u['address']) ? htmlspecialchars($u['address']) : '<span class="text-muted fst-italic">Chưa cập nhật</span>'; ?></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-12">
+                                                <div class="p-3 bg-light rounded-3 d-flex align-items-center gap-3">
+                                                    <div class="bg-white rounded-3 p-2 text-primary shadow-sm">
+                                                        <i class="bi bi-calendar-check fs-5"></i>
+                                                    </div>
+                                                    <div>
+                                                        <small class="text-secondary d-block">Ngày tham gia</small>
+                                                        <span class="fw-medium text-dark"><?php echo date('d/m/Y H:i:s', strtotime($u['created_at'])); ?></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-0 p-3 bg-light rounded-bottom-4">
+                                        <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Đóng</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <?php endforeach; ?>
 
                         <?php if (count($users) === 0): ?>

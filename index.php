@@ -193,7 +193,7 @@ include 'includes/header.php';
     ============================== */
     .hero-slider-wrap {
         padding-top: 80px; /* tránh navbar */
-        background: #000;
+        background: var(--bg-white, #fff);
     }
     .hs-shell {
         position: relative;
@@ -832,17 +832,31 @@ include 'includes/header.php';
                 <h2 class="display-5 fw-bold">Dành cho bạn.</h2>
             </div>
             <div class="product-grid-new reveal-stagger">
-                <?php foreach ($forYouProducts as $p): ?>
+                <?php foreach ($forYouProducts as $p): 
+                    $discount = (int)($p['discount'] ?? 0);
+                    $priceOld = $p['price'];
+                    $priceActual = $discount > 0 ? $priceOld * (100 - $discount) / 100 : $priceOld;
+                ?>
                     <div class="product-card-new">
                         <a href="product-detail.php?id=<?php echo $p['id']; ?>">
                             <div class="product-img-box">
+                                <?php if ($discount > 0): ?>
+                                    <span class="badge-hot" style="background: #e74c3c;">-<?php echo $discount; ?>%</span>
+                                <?php endif; ?>
                                 <img src="assets/images/<?php echo $p['image']; ?>" alt="<?php echo $p['name']; ?>"
                                     onerror="this.src='https://placehold.co/300x400/f5f5f7/1d1d1f?text=Phone'">
                             </div>
                             <div class="product-info-new">
                                 <span class="p-cat"><?php echo $p['category']; ?></span>
                                 <h3 class="p-name"><?php echo $p['name']; ?></h3>
-                                <div class="p-price-new"><?php echo number_format($p['price'], 0, ',', '.'); ?>₫</div>
+                                <div class="p-price-new">
+                                    <?php if ($discount > 0): ?>
+                                        <span><?php echo number_format($priceActual, 0, ',', '.'); ?>₫</span>
+                                        <span style="font-size: 13px; color: #86868b; text-decoration: line-through; margin-left: 8px; font-weight: normal;"><?php echo number_format($priceOld, 0, ',', '.'); ?>₫</span>
+                                    <?php else: ?>
+                                        <span><?php echo number_format($priceOld, 0, ',', '.'); ?>₫</span>
+                                    <?php endif; ?>
+                                </div>
                                 <?php if(!empty($p['specs'])): ?>
                                 <div class="p-specs">
                                     <?php

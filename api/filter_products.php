@@ -151,7 +151,7 @@ $offset     = ($page - 1) * $perPage;
 
 // ── 6. Main data query ───────────────────────────────────────────────────────
 try {
-    $sql = "SELECT id, name, category, price, image, specs, rating, review_count, stock
+    $sql = "SELECT id, name, category, price, image, specs, rating, review_count, stock, discount
             FROM products
             {$whereClause}
             ORDER BY {$orderBy}
@@ -170,12 +170,19 @@ try {
 
 // ── 7. Format each product for the frontend ───────────────────────────────────
 $formatted = array_map(function (array $p): array {
+    $discount = (int)($p['discount'] ?? 0);
+    $priceOld = (int)$p['price'];
+    $priceActual = $discount > 0 ? round($priceOld * (100 - $discount) / 100) : $priceOld;
+
     return [
         'id'           => (int)$p['id'],
         'name'         => $p['name'],
         'category'     => $p['category'],
-        'price'        => (int)$p['price'],
-        'price_fmt'    => number_format((int)$p['price'], 0, ',', '.') . '₫',
+        'price'        => (int)$priceActual,
+        'price_fmt'    => number_format((int)$priceActual, 0, ',', '.') . '₫',
+        'price_old'    => $priceOld,
+        'price_old_fmt'=> number_format($priceOld, 0, ',', '.') . '₫',
+        'discount'     => $discount,
         'image'        => $p['image'],
         'specs'        => $p['specs'] ?? '',
         'rating'       => (float)($p['rating'] ?? 0),

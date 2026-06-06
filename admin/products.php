@@ -21,6 +21,7 @@ if (isset($_POST['save_product'])) {
     $price = $_POST['price'] ?? '';
     $cost_price = $_POST['cost_price'] ?? 0;
     $stock = $_POST['stock'] ?? '';
+    $discount = (int)($_POST['discount'] ?? 0);
     $specs = trim($_POST['specs'] ?? '');
     $description = trim($_POST['description'] ?? '');
 
@@ -54,16 +55,16 @@ if (isset($_POST['save_product'])) {
 
     if ($id) {
         // Nếu có ID -> CẬP NHẬT sản phẩm hiện tại
-        $sql = "UPDATE products SET name = ?, category = ?, price = ?, cost_price = ?, stock = ?, image = ?, description = ?, specs = ? WHERE id = ?";
+        $sql = "UPDATE products SET name = ?, category = ?, price = ?, cost_price = ?, stock = ?, image = ?, description = ?, specs = ?, discount = ? WHERE id = ?";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$name, $category, $price, $cost_price, $stock, $image, $description, $specs, $id]);
+        $stmt->execute([$name, $category, $price, $cost_price, $stock, $image, $description, $specs, $discount, $id]);
         $msg = "success";
         log_admin_action($pdo, 'UPDATE_PRODUCT', "Cập nhật sản phẩm ID $id ($name)");
     } else {
         // Nếu không có ID -> THÊM MỚI sản phẩm vào bảng
-        $sql = "INSERT INTO products (name, category, price, cost_price, stock, image, description, specs) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO products (name, category, price, cost_price, stock, image, description, specs, discount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$name, $category, $price, $cost_price, $stock, $image, $description, $specs]);
+        $stmt->execute([$name, $category, $price, $cost_price, $stock, $image, $description, $specs, $discount]);
         $msg = "success";
         $new_product_id = $pdo->lastInsertId();
         log_admin_action($pdo, 'ADD_PRODUCT', "Thêm sản phẩm mới ID $new_product_id ($name)");
@@ -346,6 +347,7 @@ include 'includes/admin_header.php';
                                 <th>Tên máy</th>
                                 <th>Hãng</th>
                                 <th>Giá niêm yết</th>
+                                <th>Giảm giá</th>
                                 <th>Tồn kho</th>
                                 <th class="text-end">Hành động</th>
                             </tr>
@@ -370,14 +372,19 @@ include 'includes/admin_header.php';
                             </td>
                             <td><span class="badge bg-light text-dark border fw-normal"><?php echo $p['category']; ?></span></td>
                             <td class="fw-bold text-primary"><?php echo number_format($p['price'], 0, ',', '.'); ?>₫</td>
+                            <td>
+                                <?php if (isset($p['discount']) && $p['discount'] > 0): ?>
+                                    <span class="badge bg-danger-subtle text-danger border fw-normal px-2 rounded-pill">-<?php echo $p['discount']; ?>%</span>
+                                <?php else: ?>
+                                    <span class="text-muted fst-italic">0%</span>
+                                <?php endif; ?>
+                            </td>
                             <td><span class="text-secondary"><?php echo $p['stock']; ?> chiếc</span></td>
                             <td class="text-end">
                                 <!-- Nút Đánh dấu / Gỡ bỏ Nổi bật -->
                                 <a href="products.php?toggle_featured=<?php echo $p['id']; ?>" class="btn btn-sm border p-2 <?php echo $p['is_featured'] ? 'btn-warning text-white' : 'btn-light text-warning'; ?>" title="Ghim lên đầu trang chủ">
                                     <i class="bi bi-star<?php echo $p['is_featured'] ? '-fill' : ''; ?>"></i>
                                 </a>
-                                <!-- Nút Quản lý IMEI -->
-                                <a href="imeis.php?product_id=<?php echo $p['id']; ?>" class="btn btn-sm btn-light border p-2 ms-1" title="Quản lý IMEI"><i class="bi bi-barcode text-dark"></i></a>
                                 <!-- Nút Sửa: Truyền ID qua biến GET 'edit' -->
                                 <a href="products.php?edit=<?php echo $p['id']; ?>" class="btn btn-sm btn-light border p-2 ms-1"><i class="bi bi-pencil text-primary"></i></a>
                                 <!-- Nút Xóa: Kiểm tra tồn kho trước khi xóa -->
@@ -391,7 +398,7 @@ include 'includes/admin_header.php';
                         </tr>
                         <?php endforeach; ?>
                         <?php if (count($products) === 0): ?>
-                        <tr><td colspan="7" class="text-center py-4 text-secondary">Không tìm thấy sản phẩm nào.</td></tr>
+                        <tr><td colspan="8" class="text-center py-4 text-secondary">Không tìm thấy sản phẩm nào.</td></tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -481,6 +488,10 @@ include 'includes/admin_header.php';
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold">Số lượng tồn kho <span class="text-danger">*</span></label>
                                 <input type="number" name="stock" class="form-control rounded-3" value="<?php echo $editProduct ? $editProduct['stock'] : ''; ?>" placeholder="VD: 10" min="0" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Phần trăm giảm giá (%)</label>
+                                <input type="number" name="discount" class="form-control rounded-3" value="<?php echo ($editProduct && isset($editProduct['discount'])) ? $editProduct['discount'] : '0'; ?>" placeholder="VD: 10" min="0" max="100">
                             </div>
                             <div class="col-md-12">
                                 <label class="form-label small fw-bold">Ảnh sản phẩm <?php echo !$editProduct ? '<span class="text-danger">*</span>' : ''; ?></label>

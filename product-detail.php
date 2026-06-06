@@ -79,9 +79,18 @@ include 'includes/header.php';
                             </ol>
                         </nav>
                         
+                        <?php 
+                        $discount = (int)($product['discount'] ?? 0);
+                        $priceOld = $product['price'];
+                        $priceActual = $discount > 0 ? $priceOld * (100 - $discount) / 100 : $priceOld;
+                        ?>
                         <h1 class="display-4 fw-bold mb-3"><?php echo $product['name']; ?></h1>
                         <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
-                            <span class="h2 text-primary fw-bold mb-0"><?php echo number_format($product['price'], 0, ',', '.'); ?>₫</span>
+                            <span class="h2 text-primary fw-bold mb-0"><?php echo number_format($priceActual, 0, ',', '.'); ?>₫</span>
+                            <?php if ($discount > 0): ?>
+                                <span style="font-size: 18px; color: #86868b; text-decoration: line-through;"><?php echo number_format($priceOld, 0, ',', '.'); ?>₫</span>
+                                <span class="badge bg-danger rounded-pill px-3 py-2 small fw-bold">-<?php echo $discount; ?>%</span>
+                            <?php endif; ?>
                             <?php if ($product['stock'] > 0): ?>
                                 <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2 small fw-bold">
                                     <i class="bi bi-check-circle-fill me-1"></i> Còn hàng (<?php echo $product['stock']; ?> chiếc)
