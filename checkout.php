@@ -64,7 +64,16 @@ if (isset($_SESSION['user_id'])) {
 }
 
 $discountAmount = round($total * ($tierDiscountPercent / 100));
-$finalTotal = $total - $discountAmount;
+
+// 2. Coupon - Tính chiết khấu theo mã giảm giá (Nếu có trong session)
+$couponInfo = $_SESSION['applied_coupon'] ?? null;
+$hasCoupon  = ($couponInfo !== null);
+$couponDiscountAmount = 0;
+if ($hasCoupon) {
+    $couponDiscountAmount = round($total * ($couponInfo['discount_percent'] / 100));
+}
+
+$finalTotal = max(0, $total - $discountAmount - $couponDiscountAmount);
 
 /**
  * XỬ LÝ ĐẶT HÀNG (Khi khách nhấn nút "Xác nhận đặt hàng")
@@ -128,6 +137,7 @@ if (isset($_POST['place_order'])) {
 
             unset($_SESSION['cart']);
             unset($_SESSION['is_installment']); // Xóa flag trả góp sau khi đặt hàng
+            unset($_SESSION['applied_coupon']); // Xóa mã giảm giá sau khi đặt hàng
             
             // Xóa giỏ hàng trong DB theo user_id (đúng với cách lưu cart)
             $clearUserId = $userId ?? (isset($_SESSION['admin_id']) ? $_SESSION['admin_id'] : null);
@@ -413,6 +423,14 @@ include 'includes/header.php';
                                 <span><?php echo $userTier; ?></span>
                             </div>
                             <?php endif; ?>
+                            
+                            <?php if ($hasCoupon): ?>
+                            <div class="d-flex justify-content-between mt-2 text-success" id="checkout-coupon-row">
+                                <span>Mã giảm giá (<?php echo htmlspecialchars($couponInfo['code']); ?> -<?php echo $couponInfo['discount_percent']; ?>%):</span>
+                                <span>-<?php echo number_format($couponDiscountAmount, 0, ',', '.'); ?>₫</span>
+                            </div>
+                            <?php endif; ?>
+                            
                             <div class="d-flex justify-content-between mt-3 pt-3 border-top">
                                 <h4 class="fw-bold">Tổng cộng:</h4>
                                 <h4 class="fw-bold text-primary"><?php echo number_format($finalTotal, 0, ',', '.'); ?>₫</h4>
