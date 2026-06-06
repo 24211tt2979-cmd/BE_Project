@@ -93,26 +93,26 @@ include 'includes/header.php';
             overflow: hidden;
             border-radius: 20px;
             box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+            height: 400px; /* Cố định chiều cao của Slider trên Desktop */
         }
         .custom-banner-track {
             display: flex;
+            height: 100%;
             transition: transform 0.5s ease-in-out;
             will-change: transform;
         }
         .custom-banner-slide {
             min-width: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            height: 100%;
+            display: block;
             text-decoration: none;
-            background: #f8f9fa; /* Màu nền nhẹ cho viền ngoài (nếu ảnh nhỏ hơn khung) */
+            background: #f8f9fa;
         }
         .custom-banner-slide img {
-            max-width: 100%;
-            height: auto;
-            /* Giữ nguyên kích thước gốc, không kéo giãn làm vỡ nét */
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Tự động crop ảnh thông minh lấp đầy khung, không bị méo hay phình khung */
             display: block;
-            margin: 0 auto;
         }
         
         .custom-banner-arrow {
@@ -167,8 +167,11 @@ include 'includes/header.php';
         }
 
         @media (max-width: 768px) {
+            .custom-banner-shell {
+                height: 200px; /* Giảm chiều cao của Slider trên Mobile xuống 200px */
+            }
             .custom-banner-slide img {
-                height: 200px;
+                height: 100%;
             }
             .custom-banner-arrow {
                 width: 32px; height: 32px; font-size: 16px;
