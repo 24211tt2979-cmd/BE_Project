@@ -31,14 +31,9 @@ if (!function_exists('dbAddColumn')) {
     }
 }
 
-// 1. Cấu hình kết nối - ƯU TIÊN DATABASE_URL TỪ RENDER
-// Render sẽ tự động set biến môi trường DATABASE_URL
-$databaseUrl = getenv('DATABASE_URL') ?: ($_ENV['DATABASE_URL'] ?? $_SERVER['DATABASE_URL'] ?? null);
-
-// Fallback: Nếu không có DATABASE_URL, dùng MySQL (cho local dev)
-if (!$databaseUrl) {
-    $databaseUrl = 'mysql://root:@localhost:3306/web_ban_dien_thoai';
-}
+// 1. Cấu hình kết nối - ƯU TIÊN MYSQL_URL HOẶC DATABASE_URL TỪ RAILWAY/RENDER
+// Railway sẽ tự động set biến MYSQL_URL hoặc các biến MYSQLHOST riêng lẻ.
+$databaseUrl = getenv('MYSQL_URL') ?: getenv('DATABASE_URL') ?: ($_ENV['MYSQL_URL'] ?? $_ENV['DATABASE_URL'] ?? $_SERVER['MYSQL_URL'] ?? $_SERVER['DATABASE_URL'] ?? null);
 
 $connected = false;
 $pdo = null;
@@ -46,13 +41,12 @@ $pdo = null;
 if ($databaseUrl) {
     $dbParts = parse_url($databaseUrl);
     $host = $dbParts['host'] ?? '';
-    $port = $dbParts['port'] ?? '5432';
+    $port = $dbParts['port'] ?? '3306';
     $db = isset($dbParts['path']) ? ltrim($dbParts['path'], '/') : '';
     $user = isset($dbParts['user']) ? urldecode($dbParts['user']) : '';
     $pass = isset($dbParts['pass']) ? urldecode($dbParts['pass']) : '';
 
     try {
-        // Dùng cho MySQL
         $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4";
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -66,13 +60,13 @@ if ($databaseUrl) {
     }
 }
 
-// 2. Nếu không kết nối được, thử dùng biến môi trường riêng lẻ
+// 2. Nếu không kết nối được, thử dùng biến môi trường riêng lẻ (Hỗ trợ Railway MYSQLHOST và Render DB_HOST)
 if (!$connected) {
-    $host = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? $_SERVER['DB_HOST'] ?? 'localhost');
-    $port = getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? $_SERVER['DB_PORT'] ?? '3306');
-    $db = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? $_SERVER['DB_NAME'] ?? 'web_ban_dien_thoai');
-    $user = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? $_SERVER['DB_USER'] ?? 'root');
-    $pass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? $_SERVER['DB_PASS'] ?? '');
+    $host = getenv('MYSQLHOST') ?: getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? $_SERVER['DB_HOST'] ?? 'localhost');
+    $port = getenv('MYSQLPORT') ?: getenv('DB_PORT') ?: ($_ENV['DB_PORT'] ?? $_SERVER['DB_PORT'] ?? '3306');
+    $db = getenv('MYSQLDATABASE') ?: getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? $_SERVER['DB_NAME'] ?? 'web_ban_dien_thoai');
+    $user = getenv('MYSQLUSER') ?: getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? $_SERVER['DB_USER'] ?? 'root');
+    $pass = getenv('MYSQLPASSWORD') ?: getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? $_SERVER['DB_PASS'] ?? '');
 
     try {
         $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4";
