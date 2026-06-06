@@ -20,9 +20,15 @@ require_once __DIR__ . '/functions.php';
 if (!function_exists('dbAddColumn')) {
     function dbAddColumn($pdo, $table, $column, $definition) {
         try {
-            $stmt = $pdo->prepare("SHOW COLUMNS FROM `$table` LIKE ?");
-            $stmt->execute([$column]);
-            if ($stmt->rowCount() === 0) {
+            // Sử dụng SELECT trên information_schema để tránh lỗi prepared statement với SHOW COLUMNS trên một số phiên bản MySQL
+            $stmt = $pdo->prepare("
+                SELECT COLUMN_NAME 
+                FROM information_schema.COLUMNS 
+                WHERE TABLE_NAME = ? AND COLUMN_NAME = ? AND TABLE_SCHEMA = DATABASE()
+            ");
+            $stmt->execute([$table, $column]);
+            $exists = $stmt->fetch();
+            if (!$exists) {
                 $pdo->exec("ALTER TABLE `$table` ADD COLUMN `$column` $definition");
             }
         } catch (\PDOException $e) {
