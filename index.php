@@ -38,317 +38,649 @@ include 'includes/header.php';
 ?>
 
 <main>
-    <!-- ===== CUSTOM IMAGE BANNER SLIDER ===== -->
-    <section class="home-custom-banners">
-        <div class="container-wide">
-            <?php 
-            // Nếu không có banner động nào từ DB, dùng banner mặc định tĩnh
-            if (empty($homeBanners)) {
-                $homeBanners = [
-                    ['image' => 'banner_1.png', 'link_url' => 'product.php', 'title' => 'Banner 1'],
-                    ['image' => 'banner_2.png', 'link_url' => 'product.php', 'title' => 'Banner 2'],
-                    ['image' => 'banner_3.png', 'link_url' => 'product.php', 'title' => 'Banner 3']
-                ];
-                $isStatic = true;
-            } else {
-                $isStatic = false;
-            }
-            ?>
-            <div class="custom-banner-shell" id="customBannerCarousel">
-                <div class="custom-banner-track">
-                    <?php foreach ($homeBanners as $b): 
-                        $imagePath = $isStatic ? 'assets/images/' . $b['image'] : 'assets/images/' . $b['image'];
-                    ?>
-                    <a href="<?php echo htmlspecialchars($b['link_url'] ?: 'product.php'); ?>" class="custom-banner-slide">
-                        <img src="<?php echo htmlspecialchars($imagePath); ?>" alt="<?php echo htmlspecialchars($b['title'] ?? 'Banner'); ?>" onerror="this.src='https://placehold.co/1200x400/f5f5f7/1d1d1f?text=NHK+Mobile'">
+    <!-- ===== HERO SLIDER - CINEMATIC FULL-WIDTH ===== -->
+    <section class="hero-slider-wrap">
+        <?php 
+        if (empty($homeBanners)) {
+            $homeBanners = [
+                ['image' => 'banner_1.png', 'link_url' => 'product.php', 'title' => 'Khuyến mãi đặc biệt'],
+                ['image' => 'banner_2.png', 'link_url' => 'product.php', 'title' => 'Sản phẩm mới'],
+                ['image' => 'banner_3.png', 'link_url' => 'product.php', 'title' => 'Flash Sale hôm nay']
+            ];
+            $isStatic = true;
+        } else {
+            $isStatic = false;
+        }
+        ?>
+        <div class="hs-shell" id="heroSlider">
+            <div class="hs-track">
+                <?php foreach ($homeBanners as $idx => $b):
+                    $imgSrc = 'assets/images/' . $b['image'];
+                ?>
+                <div class="hs-slide <?php echo $idx === 0 ? 'active' : ''; ?>">
+                    <!-- Ảnh nền full -->
+                    <a href="<?php echo htmlspecialchars($b['link_url'] ?: 'product.php'); ?>" class="hs-img-wrap">
+                        <img src="<?php echo htmlspecialchars($imgSrc); ?>"
+                             alt="<?php echo htmlspecialchars($b['title'] ?? 'Banner'); ?>"
+                             class="hs-bg-img"
+                             onerror="this.src='https://placehold.co/1400x500/0f0c29/ffffff?text=NHK+Mobile'">
+                        <!-- Gradient overlay -->
+                        <div class="hs-overlay"></div>
                     </a>
-                    <?php endforeach; ?>
+                    <!-- Text content overlay -->
+                    <div class="hs-content">
+                        <span class="hs-badge">🔥 Ưu đãi độc quyền</span>
+                        <h2 class="hs-title"><?php echo htmlspecialchars($b['title'] ?? 'Banner'); ?></h2>
+                        <p class="hs-desc">Khám phá ngay bộ sưu tập mới nhất tại NHK Mobile</p>
+                        <a href="<?php echo htmlspecialchars($b['link_url'] ?: 'product.php'); ?>" class="hs-cta-btn">
+                            Xem ngay <i class="bi bi-arrow-right-circle-fill"></i>
+                        </a>
+                    </div>
                 </div>
+                <?php endforeach; ?>
+            </div>
 
-                <!-- Nút điều hướng -->
-                <button type="button" class="custom-banner-arrow custom-banner-prev" id="cbPrev">
-                    <i class="bi bi-chevron-left"></i>
-                </button>
-                <button type="button" class="custom-banner-arrow custom-banner-next" id="cbNext">
-                    <i class="bi bi-chevron-right"></i>
-                </button>
+            <!-- Navigation arrows -->
+            <button class="hs-arrow hs-prev" id="hsPrev" aria-label="Trước">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <button class="hs-arrow hs-next" id="hsNext" aria-label="Tiếp">
+                <i class="bi bi-chevron-right"></i>
+            </button>
 
-                <!-- Dấu chấm (Dots) -->
-                <div class="custom-banner-dots" id="cbDots">
-                    <?php foreach ($homeBanners as $index => $b): ?>
-                    <button type="button" class="<?php echo $index === 0 ? 'active' : ''; ?>" data-index="<?php echo $index; ?>"></button>
-                    <?php endforeach; ?>
+            <!-- Progress dots -->
+            <div class="hs-dots" id="hsDots">
+                <?php foreach ($homeBanners as $i => $b): ?>
+                <button class="hs-dot <?php echo $i === 0 ? 'active' : ''; ?>" data-index="<?php echo $i; ?>" aria-label="Slide <?php echo $i+1; ?>"></button>
+                <?php endforeach; ?>
+            </div>
+
+            <!-- Slide counter -->
+            <div class="hs-counter">
+                <span id="hsCurrentNum">1</span> / <span><?php echo count($homeBanners); ?></span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== PROMO BANNER GRID ===== -->
+    <section class="promo-banner-section">
+        <div class="container-wide">
+            <!-- Row 1: Big + Side -->
+            <div class="pb-grid-main">
+                <!-- Big main banner -->
+                <a href="product.php?category=Apple" class="pb-card pb-hero">
+                    <div class="pb-hero-bg" style="background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);"></div>
+                    <div class="pb-hero-content">
+                        <span class="pb-badge-new">Mới nhất 2025</span>
+                        <h2 class="pb-hero-title">iPhone 17<br><span>Pro Max</span></h2>
+                        <p class="pb-hero-sub">Camera 200MP · Chip A19 Bionic · 5G Ultra</p>
+                        <div class="pb-hero-price">
+                            <span class="pb-price-now">33.990.000₫</span>
+                            <span class="pb-price-old">39.990.000₫</span>
+                        </div>
+                        <span class="pb-cta-btn">Mua ngay <i class="bi bi-bag-check-fill"></i></span>
+                    </div>
+                    <img src="assets/images/apple-iphone-17-pro-max.png" alt="iPhone 17 Pro Max" class="pb-hero-img"
+                         onerror="this.style.display='none'">
+                    <div class="pb-shimmer"></div>
+                </a>
+
+                <!-- Side banners -->
+                <div class="pb-side-col">
+                    <a href="product.php?category=Samsung" class="pb-card pb-side pb-side-samsung">
+                        <div class="pb-side-content">
+                            <span class="pb-side-kicker">Flagship mới</span>
+                            <h3>Galaxy S25 Ultra</h3>
+                            <p>Trả góp 0% · 24 tháng</p>
+                        </div>
+                        <img src="assets/images/samsung-galaxy-s25-ultra.png" alt="S25 Ultra"
+                             onerror="this.style.display='none'">
+                    </a>
+                    <a href="product.php?category=Xiaomi" class="pb-card pb-side pb-side-xiaomi">
+                        <div class="pb-side-content">
+                            <span class="pb-side-kicker">Leica Camera</span>
+                            <h3>Xiaomi 17 Ultra</h3>
+                            <p>6.000 mAh · Sạc 120W</p>
+                        </div>
+                        <img src="assets/images/xiaomi-17-ultra.png" alt="Xiaomi 17 Ultra"
+                             onerror="this.style.display='none'">
+                    </a>
+                    <a href="product.php?category=OPPO" class="pb-card pb-side pb-side-oppo">
+                        <div class="pb-side-content">
+                            <span class="pb-side-kicker">Giảm 3 triệu</span>
+                            <h3>OPPO Find X10</h3>
+                            <p>Hasselblad · 100W SuperVOOC</p>
+                        </div>
+                        <img src="assets/images/oppo-find-x10.png" alt="OPPO Find X10"
+                             onerror="this.style.display='none'">
+                    </a>
                 </div>
+            </div>
+
+            <!-- Row 2: 3 Promo strips -->
+            <div class="pb-grid-promo">
+                <a href="product.php" class="pb-promo pb-promo-flash">
+                    <div class="pb-promo-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+                    <div>
+                        <div class="pb-promo-label">Flash Sale mỗi ngày</div>
+                        <div class="pb-promo-value">Giảm đến 40%</div>
+                    </div>
+                    <i class="bi bi-arrow-right-circle pb-promo-arrow"></i>
+                </a>
+                <a href="product.php?category=Apple" class="pb-promo pb-promo-trade">
+                    <div class="pb-promo-icon"><i class="bi bi-arrow-left-right"></i></div>
+                    <div>
+                        <div class="pb-promo-label">Thu cũ đổi mới iPhone</div>
+                        <div class="pb-promo-value">Cộng thêm 5.000.000₫</div>
+                    </div>
+                    <i class="bi bi-arrow-right-circle pb-promo-arrow"></i>
+                </a>
+                <a href="product.php" class="pb-promo pb-promo-credit">
+                    <div class="pb-promo-icon"><i class="bi bi-credit-card-2-front-fill"></i></div>
+                    <div>
+                        <div class="pb-promo-label">Trả góp 0% lãi suất</div>
+                        <div class="pb-promo-value">12 – 24 tháng</div>
+                    </div>
+                    <i class="bi bi-arrow-right-circle pb-promo-arrow"></i>
+                </a>
             </div>
         </div>
     </section>
 
     <style>
-        .home-custom-banners {
-            padding: 92px 0 16px; /* Tăng padding-top để không bị Navbar che mất */
-            background: #fff;
-        }
-        .custom-banner-shell {
-            position: relative;
-            overflow: hidden;
-            border-radius: 20px;
-            box-shadow: 0 12px 30px rgba(0,0,0,0.12);
-            height: 400px; /* Cố định chiều cao của Slider trên Desktop */
-        }
-        .custom-banner-track {
-            display: flex;
-            height: 100%;
-            transition: transform 0.5s ease-in-out;
-            will-change: transform;
-        }
-        .custom-banner-slide {
-            min-width: 100%;
-            height: 100%;
-            display: block;
-            text-decoration: none;
-            background: #f8f9fa;
-        }
-        .custom-banner-slide img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover; /* Tự động crop ảnh thông minh lấp đầy khung, không bị méo hay phình khung */
-            display: block;
-        }
-        
-        .custom-banner-arrow {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 44px;
-            height: 44px;
-            border: none;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.7);
-            color: #333;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            z-index: 10;
-        }
-        .custom-banner-arrow:hover {
-            background: #fff;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            transform: translateY(-50%) scale(1.05);
-        }
-        .custom-banner-prev { left: 16px; }
-        .custom-banner-next { right: 16px; }
+    /* ==============================
+       HERO SLIDER - CINEMATIC
+    ============================== */
+    .hero-slider-wrap {
+        padding-top: 80px; /* tránh navbar */
+        background: #000;
+    }
+    .hs-shell {
+        position: relative;
+        overflow: hidden;
+        height: 480px;
+        background: #0a0a0a;
+    }
+    .hs-track {
+        display: flex;
+        height: 100%;
+        position: relative;
+    }
+    .hs-slide {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        transition: opacity 0.7s cubic-bezier(.4,0,.2,1);
+        pointer-events: none;
+    }
+    .hs-slide.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .hs-img-wrap {
+        display: block;
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+    }
+    .hs-bg-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        display: block;
+        transform: scale(1.03);
+        transition: transform 6s ease;
+    }
+    .hs-slide.active .hs-bg-img {
+        transform: scale(1);
+    }
+    /* Gradient overlay - từ trái sang phải */
+    .hs-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+            90deg,
+            rgba(0,0,0,0.75) 0%,
+            rgba(0,0,0,0.4) 50%,
+            rgba(0,0,0,0.05) 100%
+        );
+    }
+    /* Text nội dung bên trái */
+    .hs-content {
+        position: absolute;
+        top: 50%;
+        left: clamp(24px, 5%, 80px);
+        transform: translateY(-50%);
+        z-index: 10;
+        max-width: 480px;
+        color: #fff;
+    }
+    .hs-badge {
+        display: inline-block;
+        background: linear-gradient(90deg, #ff6b35, #f7c59f);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        padding: 5px 14px;
+        border-radius: 30px;
+        margin-bottom: 14px;
+    }
+    .hs-title {
+        font-size: clamp(24px, 3.5vw, 44px);
+        font-weight: 800;
+        line-height: 1.15;
+        margin: 0 0 12px;
+        color: #fff;
+        text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+        letter-spacing: -.02em;
+    }
+    .hs-desc {
+        font-size: 15px;
+        color: rgba(255,255,255,0.85);
+        margin-bottom: 24px;
+        line-height: 1.6;
+    }
+    .hs-cta-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: linear-gradient(90deg, #007AFF, #5856D6);
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+        padding: 13px 28px;
+        border-radius: 50px;
+        text-decoration: none;
+        transition: all 0.25s;
+        box-shadow: 0 6px 20px rgba(0,122,255,0.4);
+    }
+    .hs-cta-btn:hover {
+        background: linear-gradient(90deg, #0063d0, #4240b0);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 28px rgba(0,122,255,0.5);
+        color: #fff;
+    }
+    /* Arrows */
+    .hs-arrow {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 48px; height: 48px;
+        border: 1.5px solid rgba(255,255,255,0.3);
+        border-radius: 50%;
+        background: rgba(255,255,255,0.12);
+        backdrop-filter: blur(8px);
+        color: #fff;
+        font-size: 20px;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        z-index: 20;
+        transition: all 0.2s;
+    }
+    .hs-arrow:hover {
+        background: rgba(255,255,255,0.25);
+        border-color: rgba(255,255,255,0.6);
+        transform: translateY(-50%) scale(1.08);
+    }
+    .hs-prev { left: 20px; }
+    .hs-next { right: 20px; }
+    /* Dots */
+    .hs-dots {
+        position: absolute;
+        bottom: 20px;
+        left: clamp(24px, 5%, 80px);
+        display: flex;
+        gap: 6px;
+        z-index: 20;
+    }
+    .hs-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255,255,255,0.35);
+        cursor: pointer;
+        padding: 0;
+        transition: all 0.35s;
+    }
+    .hs-dot.active {
+        width: 28px;
+        border-radius: 10px;
+        background: #fff;
+    }
+    /* Counter */
+    .hs-counter {
+        position: absolute;
+        bottom: 18px;
+        right: 24px;
+        color: rgba(255,255,255,0.6);
+        font-size: 13px;
+        font-weight: 600;
+        z-index: 20;
+        letter-spacing: .05em;
+    }
+    .hs-counter #hsCurrentNum { color: #fff; font-size: 16px; }
 
-        .custom-banner-dots {
-            position: absolute;
-            bottom: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 8px;
-            z-index: 10;
-        }
-        .custom-banner-dots button {
-            width: 10px;
-            height: 10px;
-            border: none;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.5);
-            cursor: pointer;
-            transition: all 0.3s;
-            padding: 0;
-        }
-        .custom-banner-dots button.active {
-            width: 24px;
-            border-radius: 12px;
-            background: #fff;
-        }
+    @media (max-width: 768px) {
+        .hs-shell { height: 260px; }
+        .hs-title { font-size: 20px; }
+        .hs-desc { display: none; }
+        .hs-cta-btn { font-size: 13px; padding: 10px 18px; }
+        .hs-badge { font-size: 10px; }
+    }
 
-        @media (max-width: 768px) {
-            .custom-banner-shell {
-                height: 200px; /* Giảm chiều cao của Slider trên Mobile xuống 200px */
-            }
-            .custom-banner-slide img {
-                height: 100%;
-            }
-            .custom-banner-arrow {
-                width: 32px; height: 32px; font-size: 16px;
-            }
-        }
+    /* ==============================
+       PROMO BANNER GRID
+    ============================== */
+    .promo-banner-section {
+        background: #f5f5f7;
+        padding: 20px 0 0;
+    }
+    /* Big + Side layout */
+    .pb-grid-main {
+        display: grid;
+        grid-template-columns: 1fr 320px;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    .pb-card {
+        border-radius: 18px;
+        overflow: hidden;
+        display: block;
+        text-decoration: none;
+        position: relative;
+        transition: transform 0.25s, box-shadow 0.25s;
+    }
+    .pb-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+        text-decoration: none;
+    }
+    /* Hero card */
+    .pb-hero {
+        min-height: 300px;
+        background: #0f0c29;
+        display: flex;
+        align-items: flex-end;
+    }
+    .pb-hero-bg {
+        position: absolute;
+        inset: 0;
+    }
+    .pb-hero-content {
+        position: relative;
+        z-index: 5;
+        padding: 32px 36px;
+        flex: 1;
+    }
+    .pb-badge-new {
+        display: inline-block;
+        background: rgba(255,214,10,0.15);
+        border: 1px solid rgba(255,214,10,0.4);
+        color: #FFD60A;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .1em;
+        padding: 4px 12px;
+        border-radius: 20px;
+        margin-bottom: 14px;
+    }
+    .pb-hero-title {
+        color: #fff;
+        font-size: 36px;
+        font-weight: 900;
+        line-height: 1.1;
+        margin: 0 0 10px;
+        letter-spacing: -.02em;
+    }
+    .pb-hero-title span {
+        background: linear-gradient(90deg, #007AFF, #AF52DE);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .pb-hero-sub {
+        color: rgba(255,255,255,0.7);
+        font-size: 13.5px;
+        margin-bottom: 18px;
+    }
+    .pb-hero-price {
+        margin-bottom: 22px;
+    }
+    .pb-price-now {
+        color: #FFD60A;
+        font-size: 22px;
+        font-weight: 800;
+        margin-right: 10px;
+    }
+    .pb-price-old {
+        color: rgba(255,255,255,0.4);
+        font-size: 14px;
+        text-decoration: line-through;
+    }
+    .pb-cta-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #fff;
+        color: #0f0c29;
+        font-size: 14px;
+        font-weight: 700;
+        padding: 11px 24px;
+        border-radius: 40px;
+        transition: all 0.2s;
+    }
+    .pb-card:hover .pb-cta-btn {
+        background: #007AFF;
+        color: #fff;
+    }
+    .pb-hero-img {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        height: 90%;
+        width: auto;
+        object-fit: contain;
+        z-index: 3;
+        filter: drop-shadow(-10px 0 30px rgba(0,0,0,0.4));
+    }
+    /* Shimmer effect */
+    .pb-shimmer {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.06) 50%, transparent 60%);
+        z-index: 6;
+        pointer-events: none;
+    }
+
+    /* Side column */
+    .pb-side-col {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .pb-side {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 20px;
+        min-height: 88px;
+        position: relative;
+        overflow: hidden;
+    }
+    .pb-side-content {
+        position: relative;
+        z-index: 2;
+    }
+    .pb-side-kicker {
+        display: block;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .1em;
+        opacity: 0.7;
+        margin-bottom: 4px;
+    }
+    .pb-side h3 {
+        font-size: 16px;
+        font-weight: 800;
+        margin: 0 0 3px;
+        color: #fff;
+        line-height: 1.2;
+    }
+    .pb-side p {
+        font-size: 11.5px;
+        color: rgba(255,255,255,0.75);
+        margin: 0;
+    }
+    .pb-side img {
+        height: 70px;
+        width: auto;
+        object-fit: contain;
+        position: relative;
+        z-index: 2;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25));
+        transition: transform 0.3s;
+    }
+    .pb-card:hover .pb-side img { transform: scale(1.08) rotate(-2deg); }
+    .pb-side-samsung {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+    }
+    .pb-side-xiaomi {
+        background: linear-gradient(135deg, #FF6B35 0%, #c0392b 100%);
+    }
+    .pb-side-oppo {
+        background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 60%, #43a047 100%);
+    }
+
+    /* Promo strips */
+    .pb-grid-promo {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        padding-bottom: 20px;
+    }
+    .pb-promo {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 18px 22px;
+        border-radius: 16px;
+        text-decoration: none;
+        transition: all 0.22s;
+        position: relative;
+        overflow: hidden;
+    }
+    .pb-promo:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        text-decoration: none;
+    }
+    .pb-promo-icon {
+        width: 48px; height: 48px;
+        border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px;
+        flex-shrink: 0;
+    }
+    .pb-promo-label {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 3px;
+    }
+    .pb-promo-value {
+        font-size: 17px;
+        font-weight: 800;
+    }
+    .pb-promo-arrow {
+        margin-left: auto;
+        font-size: 22px;
+        opacity: 0.5;
+        flex-shrink: 0;
+        transition: all 0.2s;
+    }
+    .pb-promo:hover .pb-promo-arrow { opacity: 1; transform: translateX(4px); }
+    /* Flash */
+    .pb-promo-flash {
+        background: linear-gradient(135deg, #FF3B30 0%, #FF6B35 100%);
+        color: #fff;
+    }
+    .pb-promo-flash .pb-promo-icon { background: rgba(255,255,255,0.2); color: #FFD60A; }
+    /* Trade */
+    .pb-promo-trade {
+        background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+        color: #fff;
+    }
+    .pb-promo-trade .pb-promo-icon { background: rgba(255,255,255,0.2); color: #fff; }
+    /* Credit */
+    .pb-promo-credit {
+        background: linear-gradient(135deg, #34C759 0%, #30b050 100%);
+        color: #fff;
+    }
+    .pb-promo-credit .pb-promo-icon { background: rgba(255,255,255,0.2); color: #fff; }
+
+    @media (max-width: 992px) {
+        .pb-grid-main { grid-template-columns: 1fr; }
+        .pb-side-col { flex-direction: row; }
+        .pb-side { flex: 1; min-height: 80px; }
+        .pb-hero-img { height: 70%; }
+        .pb-hero-title { font-size: 28px; }
+    }
+    @media (max-width: 640px) {
+        .pb-grid-promo { grid-template-columns: 1fr; }
+        .pb-side-col { flex-direction: column; }
+        .pb-hero-img { display: none; }
+    }
     </style>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const track = document.querySelector('.custom-banner-track');
-            const slides = document.querySelectorAll('.custom-banner-slide');
-            const dots = document.querySelectorAll('.custom-banner-dots button');
-            const prevBtn = document.getElementById('cbPrev');
-            const nextBtn = document.getElementById('cbNext');
-            
-            if (!track || slides.length === 0) return;
+    // ========= HERO SLIDER JS =========
+    document.addEventListener('DOMContentLoaded', function() {
+        const slides   = document.querySelectorAll('.hs-slide');
+        const dots     = document.querySelectorAll('.hs-dot');
+        const prevBtn  = document.getElementById('hsPrev');
+        const nextBtn  = document.getElementById('hsNext');
+        const counter  = document.getElementById('hsCurrentNum');
+        if (!slides.length) return;
 
-            let currentIndex = 0;
-            const totalSlides = slides.length;
-            let slideInterval;
+        let cur = 0, timer;
 
-            function updateCarousel() {
-                track.style.transform = `translateX(-${currentIndex * 100}%)`;
-                dots.forEach(dot => dot.classList.remove('active'));
-                if (dots[currentIndex]) {
-                    dots[currentIndex].classList.add('active');
-                }
-            }
+        function goTo(n) {
+            slides[cur].classList.remove('active');
+            dots[cur]?.classList.remove('active');
+            cur = (n + slides.length) % slides.length;
+            slides[cur].classList.add('active');
+            dots[cur]?.classList.add('active');
+            if (counter) counter.textContent = cur + 1;
+        }
 
-            function nextSlide() {
-                currentIndex = (currentIndex + 1) % totalSlides;
-                updateCarousel();
-            }
+        function next() { goTo(cur + 1); }
+        function prev() { goTo(cur - 1); }
+        function autoplay() { timer = setInterval(next, 5000); }
+        function reset()    { clearInterval(timer); autoplay(); }
 
-            function prevSlide() {
-                currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
-                updateCarousel();
-            }
+        if (nextBtn) nextBtn.addEventListener('click', () => { next(); reset(); });
+        if (prevBtn) prevBtn.addEventListener('click', () => { prev(); reset(); });
+        dots.forEach((d, i) => d.addEventListener('click', () => { goTo(i); reset(); }));
 
-            function startAutoplay() {
-                slideInterval = setInterval(nextSlide, 4000);
-            }
+        // Touch swipe
+        let touchX = 0;
+        const shell = document.getElementById('heroSlider');
+        if (shell) {
+            shell.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, { passive: true });
+            shell.addEventListener('touchend', e => {
+                const dx = e.changedTouches[0].clientX - touchX;
+                if (Math.abs(dx) > 40) { dx < 0 ? next() : prev(); reset(); }
+            }, { passive: true });
+        }
 
-            function resetAutoplay() {
-                clearInterval(slideInterval);
-                startAutoplay();
-            }
-
-            if (nextBtn) {
-                nextBtn.addEventListener('click', () => {
-                    nextSlide();
-                    resetAutoplay();
-                });
-            }
-
-            if (prevBtn) {
-                prevBtn.addEventListener('click', () => {
-                    prevSlide();
-                    resetAutoplay();
-                });
-            }
-
-            dots.forEach((dot, index) => {
-                dot.addEventListener('click', () => {
-                    currentIndex = index;
-                    updateCarousel();
-                    resetAutoplay();
-                });
-            });
-
-            startAutoplay();
-        });
+        autoplay();
+    });
     </script>
-
-    <!-- ===== HERO BANNER SECTION (E-COMMERCE STYLE) ===== -->
-    <section class="hero-new mt-4" id="heroBanners">
-        <div class="container-wide" style="padding-top: 10px; padding-bottom: 14px;">
-
-            <!-- ROW 1: Main Big Banner + Side Banners -->
-            <div class="banner-grid-main">
-                <!-- === MAIN BANNER: iPhone 17 === -->
-                <a href="product.php?category=Apple" class="banner-card banner-main" style="text-decoration:none;">
-                    <div class="banner-content">
-                        <span class="banner-kicker">⚡ Mở bán hôm nay</span>
-                        <h2 class="banner-title">iPhone 17 Pro Max</h2>
-                        <p class="banner-sub">Camera 200MP · Chip A19 Bionic · 5G</p>
-                        <div class="banner-price">
-                            33.990.000₫
-                            <small>39.990.000₫</small>
-                        </div>
-                        <span class="banner-btn btn-white">Mua ngay <i class="bi bi-arrow-right"></i></span>
-                    </div>
-                    <img src="assets/images/apple-iphone-17-pro-max.png" alt="iPhone 17 Pro Max" class="banner-img">
-                </a>
-
-                <!-- === SIDE BANNERS (3 nhỏ) === -->
-                <div class="banner-side-col">
-                    <a href="product.php?category=Samsung" class="banner-card banner-side banner-side-1" style="text-decoration:none;">
-                        <div style="z-index:2; position:relative;">
-                            <h3 class="banner-title">Galaxy S25 Ultra</h3>
-                            <p class="banner-sub">Trả góp 0% · 24 tháng</p>
-                        </div>
-                        <img src="assets/images/samsung-galaxy-s25-ultra.png" alt="S25 Ultra" class="banner-img">
-                    </a>
-                    <a href="product.php?category=Xiaomi" class="banner-card banner-side banner-side-2" style="text-decoration:none;">
-                        <div style="z-index:2; position:relative;">
-                            <h3 class="banner-title">Xiaomi 17 Ultra</h3>
-                            <p class="banner-sub">Leica Camera · 6.000 mAh</p>
-                        </div>
-                        <img src="assets/images/xiaomi-17-ultra.png" alt="Xiaomi 17" class="banner-img">
-                    </a>
-                    <a href="product.php?category=OPPO" class="banner-card banner-side banner-side-3" style="text-decoration:none;">
-                        <div style="z-index:2; position:relative;">
-                            <h3 class="banner-title">OPPO Find X10</h3>
-                            <p class="banner-sub">Sạc 100W · Giảm 3 triệu</p>
-                        </div>
-                        <img src="assets/images/oppo-find-x10.png" alt="OPPO Find X10" class="banner-img">
-                    </a>
-                </div>
-            </div>
-
-            <!-- ROW 2: 3 Promo Banners -->
-            <div class="banner-grid-sub">
-                <a href="product.php" class="banner-card banner-promo banner-promo-1" style="text-decoration:none;">
-                    <div style="z-index:2; position:relative;">
-                        <p class="banner-title">🔥 Flash Sale Cuối Tuần</p>
-                        <div class="banner-highlight">Giảm đến 40%</div>
-                    </div>
-                    <i class="bi bi-lightning-charge-fill banner-icon"></i>
-                </a>
-                <a href="product.php?category=Apple" class="banner-card banner-promo banner-promo-2" style="text-decoration:none;">
-                    <div style="z-index:2; position:relative;">
-                        <p class="banner-title">Thu cũ đổi mới iPhone</p>
-                        <div class="banner-highlight">+5.000.000₫</div>
-                    </div>
-                    <i class="bi bi-arrow-repeat banner-icon"></i>
-                </a>
-                <a href="product.php" class="banner-card banner-promo banner-promo-3" style="text-decoration:none;">
-                    <div style="z-index:2; position:relative;">
-                        <p class="banner-title">Trả góp 0% lãi suất</p>
-                        <div class="banner-highlight">12–24 tháng</div>
-                    </div>
-                    <i class="bi bi-credit-card banner-icon"></i>
-                </a>
-            </div>
-
-            <!-- ROW 3: Flash Sale + Brand Banners -->
-            <div class="banner-grid-flash">
-                <!-- Flash sale wide -->
-                <a href="product.php" class="banner-card banner-flash banner-flash-main" style="text-decoration:none;">
-                    <div style="z-index:2; position:relative;">
-                        <div class="flash-sale-label"><i class="bi bi-lightning-fill"></i> Flash Sale 12:00 hôm nay</div>
-                        <h4 class="banner-title">Điện thoại giảm đến 8.000.000₫</h4>
-                        <p class="banner-sub">Samsung · Xiaomi · OPPO · Realme</p>
-                    </div>
-                    <img src="assets/images/samsung-galaxy-s24-ultra.png" alt="Flash Sale" class="banner-img" style="height:75%; right:20px;">
-                </a>
-                <!-- Vivo -->
-                <a href="product.php?category=Vivo" class="banner-card banner-flash banner-flash-2" style="text-decoration:none;">
-                    <div style="z-index:2; position:relative;">
-                        <h4 class="banner-title">Vivo X300</h4>
-                        <p class="banner-sub">Zeiss Optics · 200W SuperCharge</p>
-                    </div>
-                    <img src="assets/images/vivo-x300.png" alt="Vivo X300" class="banner-img">
-                </a>
-                <!-- Realme -->
-                <a href="product.php?category=Realme" class="banner-card banner-flash banner-flash-3" style="text-decoration:none;">
-                    <div style="z-index:2; position:relative;">
-                        <h4 class="banner-title">Realme GT9</h4>
-                        <p class="banner-sub">Snapdragon 8 Elite · Giảm 2tr</p>
-                    </div>
-                    <img src="assets/images/realme-gt9.png" alt="Realme GT9" class="banner-img">
-                </a>
-            </div>
-
-        </div>
-    </section>
 
 
 

@@ -76,6 +76,7 @@ if (isset($_POST['save_product'])) {
 // B. XÓA SẢN PHẨM (Xử lý khi nhấn nút Xóa trên danh sách)
 if (isset($_GET['delete'])) {
     $id = $_GET['delete'];
+    $confirmed = isset($_GET['confirmed']) && $_GET['confirmed'] === '1';
     try {
         // Kiểm tra xem sản phẩm có trong giỏ hàng không
         $checkCart = $pdo->prepare("SELECT COUNT(*) FROM cart_items WHERE product_id = ?");
@@ -91,6 +92,17 @@ if (isset($_GET['delete'])) {
         if ($checkOrder->fetchColumn() > 0) {
             header("Location: products.php?error=product_in_order");
             exit;
+        }
+
+        // Kiểm tra tồn kho - nếu còn hàng và chưa xác nhận thì cảnh báo
+        if (!$confirmed) {
+            $checkStock = $pdo->prepare("SELECT stock, name FROM products WHERE id = ?");
+            $checkStock->execute([$id]);
+            $productInfo = $checkStock->fetch();
+            if ($productInfo && $productInfo['stock'] > 0) {
+                header("Location: products.php?warn_stock=1&delete_id=$id&stock=" . $productInfo['stock'] . "&pname=" . urlencode($productInfo['name']));
+                exit;
+            }
         }
 
         $pdo->beginTransaction();
@@ -296,6 +308,32 @@ include 'includes/admin_header.php';
                 </div>
             <?php endif; ?>
 
+            <!-- Cảnh báo xóa sản phẩm còn tồn kho -->
+            <?php if (isset($_GET['warn_stock']) && $_GET['warn_stock'] == '1'): ?>
+            <div class="alert alert-warning border-0 shadow-sm rounded-3 mb-4" role="alert">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="fs-4 text-warning"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold mb-1">⚠️ Cảnh báo: Sản phẩm còn hàng trong kho!</div>
+                        <div class="small mb-2">
+                            Sản phẩm <strong><?php echo htmlspecialchars($_GET['pname'] ?? ''); ?></strong> hiện còn 
+                            <strong class="text-danger"><?php echo (int)($_GET['stock'] ?? 0); ?> chiếc</strong> trong kho.
+                            Bạn có chắc chắn muốn xóa sản phẩm này không?
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="products.php?delete=<?php echo (int)($_GET['delete_id'] ?? 0); ?>&confirmed=1" 
+                               class="btn btn-danger btn-sm rounded-pill px-3">
+                                <i class="bi bi-trash me-1"></i> Xác nhận xóa
+                            </a>
+                            <a href="products.php" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                <i class="bi bi-x-circle me-1"></i> Hủy bỏ
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <form id="bulkDeleteForm" action="products.php" method="POST">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
@@ -342,8 +380,13 @@ include 'includes/admin_header.php';
                                 <a href="imeis.php?product_id=<?php echo $p['id']; ?>" class="btn btn-sm btn-light border p-2 ms-1" title="Quản lý IMEI"><i class="bi bi-barcode text-dark"></i></a>
                                 <!-- Nút Sửa: Truyền ID qua biến GET 'edit' -->
                                 <a href="products.php?edit=<?php echo $p['id']; ?>" class="btn btn-sm btn-light border p-2 ms-1"><i class="bi bi-pencil text-primary"></i></a>
-                                <!-- Nút Xóa: Truyền ID qua biến GET 'delete' kèm confirm -->
-                                <a href="products.php?delete=<?php echo $p['id']; ?>" class="btn btn-sm btn-light border p-2 text-danger ms-1" onclick="return confirm('Toàn bộ thông tin máy sẽ bị xóa, bạn chắc chứ?')"><i class="bi bi-trash"></i></a>
+                                <!-- Nút Xóa: Kiểm tra tồn kho trước khi xóa -->
+                                <a href="products.php?delete=<?php echo $p['id']; ?>" 
+                                   class="btn btn-sm btn-light border p-2 text-danger ms-1"
+                                   onclick="return confirmDeleteProduct(<?php echo $p['id']; ?>, '<?php echo addslashes($p['name']); ?>', <?php echo (int)$p['stock']; ?>)"
+                                   title="Xóa sản phẩm">
+                                   <i class="bi bi-trash"></i>
+                                </a>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -503,6 +546,18 @@ include 'includes/admin_header.php';
                 toggleBulkDeleteBtn();
             });
         });
+
+        // Hàm xác nhận xóa sản phẩm - kiểm tra tồn kho
+        function confirmDeleteProduct(id, name, stock) {
+            if (stock > 0) {
+                // Sản phẩm còn hàng - hiển thị cảnh báo đặc biệt thay vì confirm thông thường
+                // Chuyển hướng để hiện banner cảnh báo với nút xác nhận
+                window.location.href = `products.php?warn_stock=1&delete_id=${id}&stock=${stock}&pname=${encodeURIComponent(name)}`;
+                return false;
+            }
+            // Sản phẩm hết hàng - confirm thông thường
+            return confirm(`Bạn có chắc muốn xóa sản phẩm "${name}" không?`);
+        }
     </script>
 
 <?php include 'includes/admin_footer.php'; ?>

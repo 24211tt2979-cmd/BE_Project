@@ -2,130 +2,115 @@
 // Bắt đầu phiên làm việc
 require_once 'admin_auth.php';
 
-// Nhúng file kết nối CSDL Postgres
+// Nhúng file kết nối CSDL
 require_once '../includes/db.php';
 
 /**
- * 1. XỬ LÝ CẬP NHẬT TRẠNG THÁI USER VÀ CRUD
+ * 1. XỬ LÝ GỬI EMAIL YÊU CẦU CẬP NHẬT THÔNG TIN
+ * Admin không được phép sửa thông tin khách trực tiếp.
+ * Thay vào đó gửi email để khách tự cập nhật.
  */
-if (isset($_POST['save_user'])) {
-    $id = $_POST['id'] ?? null;
-    $fullname = trim($_POST['fullname']);
-    $email = trim($_POST['email']);
-    $phone = trim($_POST['phone']);
-    $address = trim($_POST['address']);
-    $status = $_POST['status'];
-    $password = $_POST['password'];
+if (isset($_POST['send_update_email'])) {
+    $uid = (int)($_POST['user_id'] ?? 0);
+    $stmtU = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+    $stmtU->execute([$uid]);
+    $targetUser = $stmtU->fetch();
 
-    if (!empty($phone) && !is_valid_phone($phone)) {
-        header("Location: users.php?error=" . urlencode("Số điện thoại không hợp lệ! Vui lòng nhập đúng 10 chữ số."));
-        exit;
-    }
+    if ($targetUser && !empty($targetUser['email'])) {
+        $toEmail  = $targetUser['email'];
+        $toName   = $targetUser['fullname'] ?? 'Quý khách';
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host     = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $loginUrl = $protocol . '://' . $host . '/profile.php';
 
-    try {
-        if ($id) {
-            if (!empty($password)) {
-                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-                $sql = "UPDATE users SET fullname = ?, email = ?, phone = ?, address = ?, status = ?, password = ? WHERE id = ?";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([$fullname, $email, $phone, $address, $status, $hashed_password, $id]);
-            } else {
-                $sql = "UPDATE users SET fullname = ?, email = ?, phone = ?, address = ?, status = ? WHERE id = ?";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([$fullname, $email, $phone, $address, $status, $id]);
-            }
-            $msg = "Cập nhật thông tin khách hàng thành công!";
-            log_admin_action($pdo, 'UPDATE_USER', "Cập nhật thông tin người dùng ID $id ($fullname, Status: $status)");
+        $subject = '[NHK Mobile] Yêu cầu cập nhật thông tin tài khoản';
+        $body    = "<div style='font-family:Arial,sans-serif;max-width:560px;margin:auto;'>"
+                 . "<div style='background:linear-gradient(135deg,#007AFF,#5856D6);padding:32px;border-radius:16px 16px 0 0;text-align:center;'>"
+                 . "<h1 style='color:#fff;margin:0;font-size:24px;'>NHK Mobile</h1>"
+                 . "<p style='color:rgba(255,255,255,0.8);margin:8px 0 0;'>Thông báo từ hệ thống</p>"
+                 . "</div>"
+                 . "<div style='background:#fff;padding:32px;border-radius:0 0 16px 16px;border:1px solid #e5e7eb;'>"
+                 . "<h2 style='color:#1d1d1f;margin:0 0 16px;'>Xin chào {$toName}!</h2>"
+                 . "<p style='color:#374151;line-height:1.6;'>Chúng tôi nhận thấy thông tin tài khoản của bạn cần được xác nhận lại để đảm bảo trải nghiệm mua sắm tốt nhất.</p>"
+                 . "<p style='color:#374151;line-height:1.6;'>Vui lòng đăng nhập và cập nhật thông tin cá nhân của bạn (họ tên, số điện thoại, địa chỉ giao hàng):</p>"
+                 . "<div style='text-align:center;margin:28px 0;'>"
+                 . "<a href='{$loginUrl}' style='background:linear-gradient(135deg,#007AFF,#5856D6);color:#fff;padding:14px 32px;border-radius:50px;text-decoration:none;font-weight:700;font-size:16px;display:inline-block;'>Cập nhật thông tin ngay</a>"
+                 . "</div>"
+                 . "<p style='color:#9ca3af;font-size:13px;'>Nếu bạn không yêu cầu điều này, vui lòng bỏ qua email này.</p>"
+                 . "<hr style='border:none;border-top:1px solid #e5e7eb;margin:20px 0;'>"
+                 . "<p style='color:#9ca3af;font-size:12px;margin:0;'>NHK Mobile &mdash; Hệ thống bán điện thoại chính hãng</p>"
+                 . "</div></div>";
+
+        if (function_exists('send_store_mail')) {
+            send_store_mail($pdo, $toEmail, $toName, $subject, $body);
         } else {
-            if (empty($password)) {
-                $password = '123456';
-            }
-            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-            $sql = "INSERT INTO users (fullname, email, phone, address, status, password) VALUES (?, ?, ?, ?, ?, ?)";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([$fullname, $email, $phone, $address, $status, $hashed_password]);
-            $msg = "Thêm khách hàng mới thành công!";
-            $new_user_id = $pdo->lastInsertId();
-            log_admin_action($pdo, 'ADD_USER', "Thêm người dùng mới ID $new_user_id ($fullname)");
+            $headers  = "MIME-Version: 1.0\r\n";
+            $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+            $headers .= "From: NHK Mobile <no-reply@nhkmobile.com>\r\n";
+            @mail($toEmail, $subject, $body, $headers);
         }
-        header("Location: users.php?msg=" . urlencode($msg));
-        exit;
-    } catch (PDOException $e) {
-        if ($e->getCode() == '23505') {
-            header("Location: users.php?error=" . urlencode("Email đã tồn tại trong hệ thống!"));
-            exit;
-        } else {
-            header("Location: users.php?error=" . urlencode("Có lỗi xảy ra: " . $e->getMessage()));
-            exit;
-        }
+
+        log_admin_action($pdo, 'SEND_UPDATE_EMAIL', "Gửi email yêu cầu cập nhật TT tới user ID $uid ({$toEmail})");
+        header("Location: users.php?msg=" . urlencode("✅ Email yêu cầu cập nhật đã gửi tới {$toEmail}!"));
+    } else {
+        header("Location: users.php?error=" . urlencode("Không tìm thấy email khách hàng!"));
     }
+    exit;
 }
 
+/**
+ * 2. CẬP NHẬT TRẠNG THÁI USER (Khóa / Mở khóa)
+ */
 if (isset($_POST['update_status'])) {
-    $id = $_POST['id'];
+    $id     = $_POST['id'];
     $status = $_POST['status'];
-    
-    // Câu lệnh SQL cập nhật trạng thái
+
     $stmt = $pdo->prepare("UPDATE users SET status = ? WHERE id = ?");
     $stmt->execute([$status, $id]);
-    
+
     log_admin_action($pdo, 'CHANGE_USER_STATUS', "Đổi trạng thái người dùng ID $id thành $status");
-    
-    // Lưu thông báo vào URL và reload trang
     header("Location: users.php?msg=" . urlencode("Đã cập nhật trạng thái người dùng thành công!"));
     exit;
 }
 
 /**
- * 2. TRUY VẤN DANH SÁCH USER
+ * 3. TRUY VẤN DANH SÁCH USER
  */
-// Cấu hình phân trang
-$limit = 5;
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$limit  = 5;
+$page   = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) $page = 1;
 $offset = ($page - 1) * $limit;
 
-$search = isset($_GET['search']) ? trim($_GET['search']) : '';
-
+$search      = isset($_GET['search']) ? trim($_GET['search']) : '';
 $whereClause = " WHERE 1=1";
-$params = [];
+$params      = [];
+
 if ($search !== '') {
     $whereClause .= " AND phone LIKE ?";
-    $params[] = "%$search%";
+    $params[]     = "%$search%";
 }
 
-// Đếm tổng số bản ghi
-$sqlCount = "SELECT COUNT(*) FROM users" . $whereClause;
-$stmtCount = $pdo->prepare($sqlCount);
+$sqlCount    = "SELECT COUNT(*) FROM users" . $whereClause;
+$stmtCount   = $pdo->prepare($sqlCount);
 $stmtCount->execute($params);
 $totalRecords = $stmtCount->fetchColumn();
-$totalPages = ceil($totalRecords / $limit);
+$totalPages   = ceil($totalRecords / $limit);
 
-$sql = "SELECT * FROM users" . $whereClause . " ORDER BY created_at DESC LIMIT $limit OFFSET $offset";
-$stmt = $pdo->prepare($sql);
+$sql   = "SELECT * FROM users" . $whereClause . " ORDER BY created_at DESC LIMIT $limit OFFSET $offset";
+$stmt  = $pdo->prepare($sql);
 $stmt->execute($params);
 $users = $stmt->fetchAll();
 
-$editData = null;
-if (isset($_GET['edit'])) {
-    $stmtEdit = $pdo->prepare("SELECT * FROM users WHERE id = ?");
-    $stmtEdit->execute([$_GET['edit']]);
-    $editData = $stmtEdit->fetch() ?: null;
-}
-
 $pageTitle = "Quản lý Người dùng | Admin NHK Mobile";
-$basePath = "../";
+$basePath  = "../";
 include 'includes/admin_header.php';
 ?>
 
         <header class="d-flex justify-content-between align-items-center mb-5">
             <div>
                  <h2 class="fw-bold mb-1">Quản lý Khách hàng</h2>
-                 <p class="text-secondary small mb-0">Xem danh sách đăng ký và khóa tài khoản vi phạm.</p>
+                 <p class="text-secondary small mb-0">Xem danh sách đăng ký, khóa tài khoản vi phạm và gửi email yêu cầu khách tự cập nhật thông tin.</p>
             </div>
-            <button class="btn btn-primary shadow-sm px-4 py-2 rounded-3" data-bs-toggle="modal" data-bs-target="#userModal">
-                <i class="bi bi-person-plus me-2"></i> Thêm Khách hàng
-            </button>
         </header>
 
         <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
@@ -143,10 +128,9 @@ include 'includes/admin_header.php';
         </div>
 
         <div class="content-card shadow-sm border-0 rounded-4 p-4 bg-white">
-            <!-- Hiển thị thông báo khi cập nhật thành công -->
             <?php if (isset($_GET['msg'])): ?>
-                <div class="alert alert-primary alert-dismissible fade show mb-4 border-0 rounded-3" role="alert">
-                    <i class="bi bi-info-circle-fill me-2"></i> <?php echo htmlspecialchars($_GET['msg']); ?>
+                <div class="alert alert-success alert-dismissible fade show mb-4 border-0 rounded-3" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i> <?php echo htmlspecialchars($_GET['msg']); ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
@@ -156,6 +140,12 @@ include 'includes/admin_header.php';
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
+
+            <!-- Ghi chú chính sách -->
+            <div class="alert alert-info border-0 rounded-3 mb-4 d-flex align-items-center gap-2 py-2" style="font-size:13px;">
+                <i class="bi bi-info-circle-fill text-primary"></i>
+                <span>Chính sách: Admin <strong>không chỉnh sửa</strong> thông tin khách hàng trực tiếp. Hãy dùng nút <i class="bi bi-envelope text-primary"></i> để gửi email yêu cầu khách tự cập nhật.</span>
+            </div>
 
             <div class="table-responsive">
                 <table class="table table-hover align-middle">
@@ -170,7 +160,6 @@ include 'includes/admin_header.php';
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Vòng lặp PHP Duyệt danh sách User -->
                         <?php foreach($users as $u): ?>
                         <tr>
                             <td class="text-secondary fw-bold small">#USR-<?php echo $u['id']; ?></td>
@@ -212,9 +201,9 @@ include 'includes/admin_header.php';
                                 <?php endif; ?>
                             </td>
                             <td class="text-end">
+                                <!-- Nút Khóa / Mở khóa -->
                                 <form action="users.php" method="POST" style="display: inline-block;">
                                     <input type="hidden" name="id" value="<?php echo $u['id']; ?>">
-                                    
                                     <?php if ($u['status'] === 'active' || empty($u['status'])): ?>
                                         <button type="submit" name="update_status" value="1"
                                                 class="btn btn-sm btn-outline-danger shadow-sm px-3 rounded-pill"
@@ -231,14 +220,23 @@ include 'includes/admin_header.php';
                                         </button>
                                     <?php endif; ?>
                                 </form>
-                                <a href="users.php?edit=<?php echo $u['id']; ?>" class="btn btn-sm btn-light border p-2 ms-1 rounded-pill" title="Sửa thông tin"><i class="bi bi-pencil text-primary"></i></a>
+                                <!-- Nút Gửi email yêu cầu cập nhật thông tin -->
+                                <form action="users.php" method="POST" style="display: inline-block;"
+                                      onsubmit="return confirm('Gửi email yêu cầu cập nhật thông tin tới <?php echo addslashes(htmlspecialchars($u['email'] ?? '')); ?>?')">
+                                    <input type="hidden" name="user_id" value="<?php echo $u['id']; ?>">
+                                    <button type="submit" name="send_update_email"
+                                            class="btn btn-sm btn-light border p-2 ms-1 rounded-pill"
+                                            title="Gửi email yêu cầu khách cập nhật thông tin">
+                                        <i class="bi bi-envelope text-primary"></i>
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                         <?php endforeach; ?>
-                        
+
                         <?php if (count($users) === 0): ?>
                         <tr>
-                            <td colspan="7" class="text-center py-4 text-secondary">Chưa có người dùng nào.</td>
+                            <td colspan="6" class="text-center py-4 text-secondary">Chưa có người dùng nào.</td>
                         </tr>
                         <?php endif; ?>
                     </tbody>
@@ -254,7 +252,7 @@ include 'includes/admin_header.php';
                     </li>
                     <?php
                     $startPage = max(1, $page - 2);
-                    $endPage = min($totalPages, $page + 2);
+                    $endPage   = min($totalPages, $page + 2);
                     if ($startPage > 1) {
                         echo '<li class="page-item"><a class="page-link" href="?page=1' . ($search ? '&search='.urlencode($search) : '') . '">1</a></li>';
                         if ($startPage > 2) {
@@ -265,7 +263,7 @@ include 'includes/admin_header.php';
                         <li class="page-item <?php echo $page == $i ? 'active' : ''; ?>">
                             <a class="page-link" href="?page=<?php echo $i; ?><?php echo $search ? '&search='.urlencode($search) : ''; ?>"><?php echo $i; ?></a>
                         </li>
-                    <?php endfor; 
+                    <?php endfor;
                     if ($endPage < $totalPages) {
                         if ($endPage < $totalPages - 1) {
                             echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
@@ -281,60 +279,5 @@ include 'includes/admin_header.php';
             <?php endif; ?>
         </div>
     </main>
-
-    <!-- MODAL THÊM / SỬA KHÁCH HÀNG -->
-    <div class="modal fade <?php echo $editData ? 'show' : ''; ?>" id="userModal" tabindex="-1" <?php echo $editData ? 'style="display: block; background: rgba(0,0,0,0.5)"' : ''; ?>>
-        <div class="modal-dialog border-0">
-            <div class="modal-content rounded-4 border-0 shadow-lg">
-                <form action="users.php" method="POST">
-                    <div class="modal-header border-bottom-0 pb-0 px-4 pt-4">
-                        <h5 class="fw-bold mb-0"><?php echo $editData ? 'Sửa thông tin Khách hàng' : 'Thêm Khách hàng mới'; ?></h5>
-                        <a href="users.php" class="btn-close"></a>
-                    </div>
-                    <div class="modal-body px-4 py-4">
-                        <input type="hidden" name="id" value="<?php echo $editData['id'] ?? ''; ?>">
-                        
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Họ và tên *</label>
-                            <input type="text" name="fullname" class="form-control bg-light border-0" value="<?php echo htmlspecialchars($editData['fullname'] ?? ''); ?>" required placeholder="Nguyễn Văn A">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Email *</label>
-                            <input type="email" name="email" class="form-control bg-light border-0" value="<?php echo htmlspecialchars($editData['email'] ?? ''); ?>" required placeholder="email@example.com">
-                        </div>
-
-                        <div class="row">
-                            <div class="col-6 mb-3">
-                                <label class="form-label small fw-bold">Số điện thoại</label>
-                                <input type="text" name="phone" class="form-control bg-light border-0" value="<?php echo htmlspecialchars($editData['phone'] ?? ''); ?>" placeholder="0901234567" pattern="[0-9]{10}" title="Vui lòng nhập đúng 10 chữ số">
-                            </div>
-                            <div class="col-6 mb-3">
-                                <label class="form-label small fw-bold">Trạng thái *</label>
-                                <select name="status" class="form-select bg-light border-0" required>
-                                    <option value="active" <?php echo (isset($editData['status']) && $editData['status'] == 'active') ? 'selected' : ''; ?>>Hoạt động</option>
-                                    <option value="banned" <?php echo (isset($editData['status']) && $editData['status'] == 'banned') ? 'selected' : ''; ?>>Đã khóa</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Địa chỉ</label>
-                            <textarea name="address" class="form-control bg-light border-0" rows="2" placeholder="Địa chỉ giao hàng..."><?php echo htmlspecialchars($editData['address'] ?? ''); ?></textarea>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Mật khẩu <?php echo $editData ? '(Để trống nếu không đổi)' : '*'; ?></label>
-                            <input type="password" name="password" class="form-control bg-light border-0" placeholder="Nhập mật khẩu..." <?php echo !$editData ? 'required' : ''; ?>>
-                        </div>
-                    </div>
-                    <div class="modal-footer border-top-0 px-4 pb-4">
-                        <a href="users.php" class="btn btn-light px-4 rounded-pill">Hủy bỏ</a>
-                        <button type="submit" name="save_user" class="btn btn-primary px-4 rounded-pill shadow-sm">Lưu dữ liệu</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
 
 <?php include 'includes/admin_footer.php'; ?>
