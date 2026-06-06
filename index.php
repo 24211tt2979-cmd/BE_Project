@@ -41,22 +41,28 @@ include 'includes/header.php';
     <!-- ===== CUSTOM IMAGE BANNER SLIDER ===== -->
     <section class="home-custom-banners">
         <div class="container-wide">
+            <?php 
+            // Nếu không có banner động nào từ DB, dùng banner mặc định tĩnh
+            if (empty($homeBanners)) {
+                $homeBanners = [
+                    ['image' => 'banner_1.png', 'link_url' => 'product.php', 'title' => 'Banner 1'],
+                    ['image' => 'banner_2.png', 'link_url' => 'product.php', 'title' => 'Banner 2'],
+                    ['image' => 'banner_3.png', 'link_url' => 'product.php', 'title' => 'Banner 3']
+                ];
+                $isStatic = true;
+            } else {
+                $isStatic = false;
+            }
+            ?>
             <div class="custom-banner-shell" id="customBannerCarousel">
                 <div class="custom-banner-track">
-                    <!-- SLIDE 1 -->
-                    <a href="product.php" class="custom-banner-slide">
-                        <img src="assets/images/banner_1.png" alt="Banner 1">
+                    <?php foreach ($homeBanners as $b): 
+                        $imagePath = $isStatic ? 'assets/images/' . $b['image'] : 'assets/images/' . $b['image'];
+                    ?>
+                    <a href="<?php echo htmlspecialchars($b['link_url'] ?: 'product.php'); ?>" class="custom-banner-slide">
+                        <img src="<?php echo htmlspecialchars($imagePath); ?>" alt="<?php echo htmlspecialchars($b['title'] ?? 'Banner'); ?>" onerror="this.src='https://placehold.co/1200x400/f5f5f7/1d1d1f?text=NHK+Mobile'">
                     </a>
-                    
-                    <!-- SLIDE 2 -->
-                    <a href="product.php" class="custom-banner-slide">
-                        <img src="assets/images/banner_2.png" alt="Banner 2">
-                    </a>
-                    
-                    <!-- SLIDE 3 -->
-                    <a href="product.php" class="custom-banner-slide">
-                        <img src="assets/images/banner_3.png" alt="Banner 3">
-                    </a>
+                    <?php endforeach; ?>
                 </div>
 
                 <!-- Nút điều hướng -->
@@ -69,9 +75,9 @@ include 'includes/header.php';
 
                 <!-- Dấu chấm (Dots) -->
                 <div class="custom-banner-dots" id="cbDots">
-                    <button type="button" class="active" data-index="0"></button>
-                    <button type="button" data-index="1"></button>
-                    <button type="button" data-index="2"></button>
+                    <?php foreach ($homeBanners as $index => $b): ?>
+                    <button type="button" class="<?php echo $index === 0 ? 'active' : ''; ?>" data-index="<?php echo $index; ?>"></button>
+                    <?php endforeach; ?>
                 </div>
             </div>
         </div>
