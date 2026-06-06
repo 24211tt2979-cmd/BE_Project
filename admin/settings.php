@@ -34,18 +34,24 @@ if (isset($_POST['save_banner'])) {
     }
 
     if ($title !== '') {
-        if ($id > 0) {
-            $stmt = $pdo->prepare("UPDATE homepage_banners SET title = ?, subtitle = ?, image = ?, link_url = ?, sort_order = ?, is_active = ? WHERE id = ?");
-            $stmt->execute([$title, $subtitle, $image, $linkUrl, $sortOrder, $isActive, $id]);
-            log_admin_action($pdo, 'UPDATE_HOME_BANNER', "Cập nhật banner ID $id");
-        } else {
-            $stmt = $pdo->prepare("INSERT INTO homepage_banners (title, subtitle, image, link_url, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$title, $subtitle, $image, $linkUrl, $sortOrder, $isActive]);
-            log_admin_action($pdo, 'ADD_HOME_BANNER', "Thêm banner $title");
+        try {
+            if ($id > 0) {
+                $stmt = $pdo->prepare("UPDATE homepage_banners SET title = ?, subtitle = ?, image = ?, link_url = ?, sort_order = ?, is_active = ? WHERE id = ?");
+                $stmt->execute([$title, $subtitle, $image, $linkUrl, $sortOrder, $isActive, $id]);
+                log_admin_action($pdo, 'UPDATE_HOME_BANNER', "Cập nhật banner ID $id");
+            } else {
+                $stmt = $pdo->prepare("INSERT INTO homepage_banners (title, subtitle, image, link_url, sort_order, is_active) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$title, $subtitle, $image, $linkUrl, $sortOrder, $isActive]);
+                log_admin_action($pdo, 'ADD_HOME_BANNER', "Thêm banner $title");
+            }
+            header("Location: settings.php?msg=banner");
+            exit;
+        } catch (PDOException $e) {
+            error_log("[Settings Banner] Save error: " . $e->getMessage());
+            header("Location: settings.php?error=" . urlencode("Lỗi CSDL: " . $e->getMessage()));
+            exit;
         }
     }
-    header("Location: settings.php?msg=banner");
-    exit;
 }
 
 if (isset($_GET['delete_banner'])) {
@@ -77,6 +83,9 @@ include 'includes/admin_header.php';
 
 <?php if (isset($_GET['msg'])): ?>
     <div class="alert alert-success border-0 rounded-3 shadow-sm">Đã lưu thay đổi thành công.</div>
+<?php endif; ?>
+<?php if (isset($_GET['error'])): ?>
+    <div class="alert alert-danger border-0 rounded-3 shadow-sm"><?php echo htmlspecialchars($_GET['error']); ?></div>
 <?php endif; ?>
 
 <div class="row g-4">

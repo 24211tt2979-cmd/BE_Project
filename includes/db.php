@@ -419,17 +419,27 @@ try {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
     "); } catch (\PDOException $e) {}
+    try { $pdo->exec("ALTER TABLE homepage_banners MODIFY COLUMN id INT AUTO_INCREMENT;"); } catch (\PDOException $e) {}
 
     try {
         $bannerCount = (int)$pdo->query("SELECT COUNT(*) FROM homepage_banners")->fetchColumn();
         if ($bannerCount === 0) {
             $pdo->exec("
                 INSERT INTO homepage_banners (title, subtitle, image, link_url, sort_order, is_active) VALUES
-                ('iPhone 17 Pro Max', 'Mở bán hôm nay - ưu đãi lớn', 'apple-iphone-17-pro-max.png', 'product.php?category=Apple', 1, TRUE),
-                ('Galaxy S25 Ultra', 'Trả góp 0% trong 24 tháng', 'samsung-galaxy-s25-ultra.png', 'product.php?category=Samsung', 2, TRUE),
-                ('Xiaomi 17 Ultra', 'Camera Leica và pin bền bỉ', 'xiaomi-17-ultra.png', 'product.php?category=Xiaomi', 3, TRUE);
+                ('iPhone 17 Pro Max', 'Mở bán hôm nay - ưu đãi lớn', 'banner_1.png', 'product.php?category=Apple', 1, TRUE),
+                ('Galaxy S25 Ultra', 'Trả góp 0% trong 24 tháng', 'banner_2.png', 'product.php?category=Samsung', 2, TRUE),
+                ('Xiaomi 17 Ultra', 'Camera Leica và pin bền bỉ', 'banner_3.png', 'product.php?category=Xiaomi', 3, TRUE);
             ");
         }
+    } catch (\PDOException $e) {}
+
+    try {
+        // Tự động sửa lại hình ảnh mẫu của banner nếu DB đã được tạo trước đó với đường dẫn ảnh lỗi
+        $pdo->exec("
+            UPDATE homepage_banners SET image = 'banner_1.png' WHERE image = 'apple-iphone-17-pro-max.png';
+            UPDATE homepage_banners SET image = 'banner_2.png' WHERE image = 'samsung-galaxy-s25-ultra.png';
+            UPDATE homepage_banners SET image = 'banner_3.png' WHERE image = 'xiaomi-17-ultra.png';
+        ");
     } catch (\PDOException $e) {}
 
     try { $pdo->exec("
