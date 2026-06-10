@@ -16,6 +16,10 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST');
 header('Access-Control-Allow-Headers: Content-Type');
 
+// Tự động phát hiện base path (hỗ trợ cả root và subfolder)
+$baseDir = rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'])), '/');
+$baseUrl = $baseDir === '' ? '' : $baseDir . '/';
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['error' => 'Method not allowed']);
@@ -93,12 +97,12 @@ if (preg_match('/(?:gi[aá]|bao nhi[eê]u ti[eề]n|bao nhi[eê]u|m[aá]c kh[oô
                        . "💰 Giá: <strong>" . fmtPrice($p['price']) . "</strong>\n"
                        . "📦 Tồn kho: $stockText\n"
                        . "⭐ Đánh giá: {$p['rating']}/5 ({$p['review_count']} đánh giá)\n"
-                       . "👉 <a href='/nhkmobile_web-main/product-detail.php?id={$p['id']}' target='_blank'>Xem chi tiết sản phẩm</a>";
+                       . "👉 <a href='{$baseUrl}product-detail.php?id={$p['id']}' target='_blank'>Xem chi tiết sản phẩm</a>";
             } else {
                 $reply = "Em tìm được " . count($products) . " sản phẩm phù hợp:\n";
                 foreach ($products as $p) {
                     $stockIcon = $p['stock'] > 0 ? '✅' : '❌';
-                    $reply .= "• $stockIcon <a href='/nhkmobile_web-main/product-detail.php?id={$p['id']}' target='_blank'><strong>{$p['name']}</strong></a> – " . fmtPrice($p['price']) . "\n";
+                    $reply .= "• $stockIcon <a href='{$baseUrl}product-detail.php?id={$p['id']}' target='_blank'><strong>{$p['name']}</strong></a> – " . fmtPrice($p['price']) . "\n";
                 }
                 $reply .= "\nAnh/chị muốn tư vấn chi tiết sản phẩm nào ạ?";
             }
@@ -119,7 +123,7 @@ if (!$reply && preg_match('/(?:c[oò]n h[àa]ng|c[oò]n m[áa]y|c[oò]n kh[oô]n
                 if ($p['stock'] > 0) {
                     $reply = "✅ <strong>{$p['name']}</strong> hiện còn <strong>{$p['stock']} máy</strong> trong kho ạ!\n"
                            . "💰 Giá: " . fmtPrice($p['price']) . "\n"
-                           . "👉 <a href='/nhkmobile_web-main/product-detail.php?id={$p['id']}' target='_blank'>Đặt hàng ngay</a>";
+                           . "👉 <a href='{$baseUrl}product-detail.php?id={$p['id']}' target='_blank'>Đặt hàng ngay</a>";
                 } else {
                     $reply = "⚠️ Rất tiếc, <strong>{$p['name']}</strong> hiện đã <strong>tạm hết hàng</strong>.\n"
                            . "Anh/chị để lại số điện thoại, em sẽ thông báo khi có hàng về nhé! 📞 0375 352 347";
@@ -154,7 +158,7 @@ if (!$reply && preg_match('/(?:th[oô]ng s[oố]|c[aấ]u h[iì]nh|ram|b[oộ] n
                    . "🔧 $specs\n"
                    . "💰 Giá: " . fmtPrice($p['price']) . " | "
                    . ($p['stock'] > 0 ? "✅ Còn hàng" : "❌ Hết hàng") . "\n"
-                   . "👉 <a href='/nhkmobile_web-main/product-detail.php?id={$p['id']}' target='_blank'>Xem chi tiết đầy đủ</a>";
+                   . "👉 <a href='{$baseUrl}product-detail.php?id={$p['id']}' target='_blank'>Xem chi tiết đầy đủ</a>";
             break;
         }
     }
@@ -194,7 +198,7 @@ if (!$reply) {
                 $reply = "📱 Danh sách điện thoại <strong>$bname</strong> tại NHK Mobile (" . count($products) . " sản phẩm):\n";
                 foreach ($products as $p) {
                     $stockIcon = $p['stock'] > 0 ? '✅' : '❌';
-                    $reply .= "• $stockIcon <a href='/nhkmobile_web-main/product-detail.php?id={$p['id']}' target='_blank'><strong>{$p['name']}</strong></a> – " . fmtPrice($p['price']) . " ⭐{$p['rating']}\n";
+                    $reply .= "• $stockIcon <a href='{$baseUrl}product-detail.php?id={$p['id']}' target='_blank'><strong>{$p['name']}</strong></a> – " . fmtPrice($p['price']) . " ⭐{$p['rating']}\n";
                 }
                 $reply .= "\nAnh/chị muốn tư vấn thêm về sản phẩm nào không ạ?";
             }
@@ -229,7 +233,7 @@ if (!$reply && preg_match('/(?:r[eẻ] nh[aấ]t|gi[aá] th[aấ]p|ti[eề]t ki[
         foreach ($products as $p) {
             $catTag = $brandFilter ? '' : " [{$p['category']}]";
             $stockIcon = $p['stock'] > 0 ? '✅' : '❌';
-            $reply .= "$i. $stockIcon <a href='/nhkmobile_web-main/product-detail.php?id={$p['id']}' target='_blank'><strong>{$p['name']}</strong></a>$catTag – " . fmtPrice($p['price']) . "\n";
+            $reply .= "$i. $stockIcon <a href='{$baseUrl}product-detail.php?id={$p['id']}' target='_blank'><strong>{$p['name']}</strong></a>$catTag – " . fmtPrice($p['price']) . "\n";
             $i++;
         }
     }
@@ -261,7 +265,7 @@ if (!$reply && preg_match('/(?:[dđ][aắ]t nh[aấ]t|cao c[aấ]p nh[aấ]t|fla
         foreach ($products as $p) {
             $catTag = $brandFilter ? '' : " [{$p['category']}]";
             $stockIcon = $p['stock'] > 0 ? '✅' : '❌';
-            $reply .= "$i. $stockIcon <a href='/nhkmobile_web-main/product-detail.php?id={$p['id']}' target='_blank'><strong>{$p['name']}</strong></a>$catTag – " . fmtPrice($p['price']) . "\n";
+            $reply .= "$i. $stockIcon <a href='{$baseUrl}product-detail.php?id={$p['id']}' target='_blank'><strong>{$p['name']}</strong></a>$catTag – " . fmtPrice($p['price']) . "\n";
             $i++;
         }
     }
@@ -278,7 +282,7 @@ if (!$reply && preg_match('/(?:n[oổ]i b[aậ]t|b[aá]n ch[aạ]y|hot|ph[oổ] 
         $reply = "🔥 Sản phẩm nổi bật tại NHK Mobile:\n";
         foreach ($products as $p) {
             $stockIcon = $p['stock'] > 0 ? '✅' : '❌';
-            $reply .= "• $stockIcon <a href='/nhkmobile_web-main/product-detail.php?id={$p['id']}' target='_blank'><strong>{$p['name']}</strong></a> [{$p['category']}] – " . fmtPrice($p['price']) . " ⭐{$p['rating']}\n";
+            $reply .= "• $stockIcon <a href='{$baseUrl}product-detail.php?id={$p['id']}' target='_blank'><strong>{$p['name']}</strong></a> [{$p['category']}] – " . fmtPrice($p['price']) . " ⭐{$p['rating']}\n";
         }
         $reply .= "\nAnh/chị muốn tư vấn thêm không ạ?";
     }
@@ -318,10 +322,10 @@ if (!$reply && preg_match('/(?:\d+)\s*(?:tri[eệ]u|tr|000\.000)/u', $msg)) {
             $reply = "🔍 Tìm thấy " . count($products) . " sản phẩm trong khoảng <strong>$rangeLabel</strong>:\n";
             foreach ($products as $p) {
                 $stockIcon = $p['stock'] > 0 ? '✅' : '❌';
-                $reply .= "• $stockIcon <a href='/nhkmobile_web-main/product-detail.php?id={$p['id']}' target='_blank'><strong>{$p['name']}</strong></a> [{$p['category']}] – " . fmtPrice($p['price']) . " ⭐{$p['rating']}\n";
+                $reply .= "• $stockIcon <a href='{$baseUrl}product-detail.php?id={$p['id']}' target='_blank'><strong>{$p['name']}</strong></a> [{$p['category']}] – " . fmtPrice($p['price']) . " ⭐{$p['rating']}\n";
             }
         } else {
-            $reply = "Dạ hiện tại NHK Mobile chưa có sản phẩm trong khoảng giá này ạ. Anh/chị có thể xem các sản phẩm khác tại <a href='/nhkmobile_web-main/product.php'>trang sản phẩm</a> nhé!";
+            $reply = "Dạ hiện tại NHK Mobile chưa có sản phẩm trong khoảng giá này ạ. Anh/chị có thể xem các sản phẩm khác tại <a href='{$baseUrl}product.php'>trang sản phẩm</a> nhé!";
         }
     }
 }

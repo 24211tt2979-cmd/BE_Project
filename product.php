@@ -561,7 +561,7 @@ const FilterState = {
     storage  : '<?php echo htmlspecialchars($storage ?? ''); ?>',
     q        : '<?php echo htmlspecialchars($search ?? ''); ?>',
     sort     : '<?php echo htmlspecialchars($sort); ?>',
-    page     : 1,
+    page     : <?php echo $page; ?>,
     per_page : 12,
 };
 
@@ -697,6 +697,11 @@ function renderPagination(current, total) {
     html += btn(current + 1, '<i class="bi bi-chevron-right"></i>', current >= total);
     paginationEl.innerHTML = html;
 }
+
+// Render initial pagination on page load
+document.addEventListener('DOMContentLoaded', () => {
+    renderPagination(<?php echo $page; ?>, <?php echo $totalPages; ?>);
+});
 
 // ── Core fetch function ──────────────────────────────────────────────────────
 async function fetchProducts() {
