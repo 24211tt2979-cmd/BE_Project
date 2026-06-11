@@ -128,11 +128,31 @@ if (isset($_POST['place_order'])) {
             
             // Sau khi lưu đơn thành công, xóa sạch giỏ hàng trong Session và Database
             if ($customerEmail && is_valid_email($customerEmail)) {
-                $mailBody = "<h2>NHK Mobile da nhan don hang #$orderId</h2>"
-                    . "<p>Cam on " . htmlspecialchars($name) . " da dat hang.</p>"
-                    . "<p>Tong tien: <strong>" . number_format($finalTotal, 0, ',', '.') . " VND</strong></p>"
-                    . "<p>Trang thai hien tai: Cho duyet. Cua hang se lien he xac nhan som.</p>";
-                send_store_mail($customerEmail, "NHK Mobile - Xac nhan don hang #$orderId", $mailBody, $pdo);
+                $itemRows = '';
+                foreach ($cartItems as $item) {
+                    $sub = $item['price'] * $item['qty'];
+                    $itemRows .= "<tr><td style='padding:8px 0;border-bottom:1px solid #eee'>{$item['name']}</td>"
+                        . "<td style='padding:8px 0;border-bottom:1px solid #eee;text-align:center'>{$item['qty']}</td>"
+                        . "<td style='padding:8px 0;border-bottom:1px solid #eee;text-align:right'>" . number_format($sub, 0, ',', '.') . "₫</td></tr>";
+                }
+                $totalFormatted = number_format($finalTotal, 0, ',', '.');
+                $bodyHtml = "<p style='margin:0 0 16px;color:#3c3c43'>Xin chào <strong>" . htmlspecialchars($name) . "</strong>,</p>"
+                    . "<p style='margin:0 0 16px;color:#3c3c43'>Cảm ơn bạn đã đặt hàng tại <strong>NHK Mobile</strong>. Đơn hàng #<strong>$orderId</strong> của bạn đã được tiếp nhận và đang chờ xử lý.</p>"
+                    . "<table width='100%' cellpadding='0' cellspacing='0' style='border-collapse:collapse;margin:0 0 16px'>"
+                    . "<thead><tr style='background:#f8f8fa'>"
+                    . "<th style='padding:10px 12px;text-align:left;font-size:13px;color:#3c3c43'>Sản phẩm</th>"
+                    . "<th style='padding:10px 12px;text-align:center;font-size:13px;color:#3c3c43'>SL</th>"
+                    . "<th style='padding:10px 12px;text-align:right;font-size:13px;color:#3c3c43'>Thành tiền</th>"
+                    . "</tr></thead><tbody>$itemRows</tbody></table>"
+                    . "<p style='margin:0 0 8px;font-size:16px;text-align:right'><strong>Tổng cộng: $totalFormatted₫</strong></p>"
+                    . "<p style='margin:0 0 8px;color:#3c3c43'>Phương thức thanh toán: <strong>$payment</strong></p>"
+                    . "<p style='margin:0 0 8px;color:#3c3c43'>Địa chỉ giao hàng: " . htmlspecialchars($address) . "</p>"
+                    . "<p style='margin:24px 0 0;padding:16px;background:#fff3cd;border-radius:8px;color:#856404;font-size:13px'>"
+                    . "<strong>⏳ Trạng thái hiện tại: Chờ duyệt.</strong> Chúng tôi sẽ gọi điện xác nhận đơn hàng trong vòng 15–30 phút tới.</p>"
+                    . "<p style='text-align:center;margin:20px 0 0'>"
+                    . "<a href='" . rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'])), '/') . "/track_order.php?order_id=$orderId&phone=" . urlencode($phone) . "' style='display:inline-block;padding:12px 28px;background:#007AFF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px'>Theo dõi đơn hàng</a></p>";
+                $mailBody = build_email_html("Đơn hàng #$orderId đã được tiếp nhận", $bodyHtml);
+                send_store_mail($customerEmail, "NHK Mobile - Xác nhận đơn hàng #$orderId", $mailBody, $pdo);
             }
 
             unset($_SESSION['cart']);

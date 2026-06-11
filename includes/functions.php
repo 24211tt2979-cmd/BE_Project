@@ -84,6 +84,39 @@ function set_system_setting($pdo, $key, $value) {
 }
 
 
+/**
+ * Tạo giao diện HTML chuẩn cho email NHK Mobile
+ */
+function build_email_html(string $title, string $bodyHtml, string $extraFooter = ''): string {
+    $storeName = 'NHK Mobile';
+    $hotline = '0375 352 347';
+    return <<<HTML
+<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f4f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 12px">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)">
+<tr><td style="background:#007AFF;padding:28px 32px;text-align:center">
+<h1 style="margin:0;color:#fff;font-size:22px;font-weight:700">$storeName</h1>
+<p style="margin:4px 0 0;color:rgba(255,255,255,.8);font-size:13px">Hệ thống bán lẻ điện thoại chính hãng</p>
+</td></tr>
+<tr><td style="padding:32px">
+<h2 style="margin:0 0 16px;font-size:18px;color:#1d1d1f">$title</h2>
+$bodyHtml
+</td></tr>
+<tr><td style="background:#f8f8fa;padding:20px 32px;text-align:center;font-size:12px;color:#86868b">
+<p style="margin:0 0 6px">$storeName — $hotline</p>
+$extraFooter
+<p style="margin:6px 0 0;opacity:.6">Email này được gửi tự động, vui lòng không trả lời.</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body>
+</html>
+HTML;
+}
+
 function send_store_mail($to, $subject, $message, $pdo = null) {
     // Validate email đầu vào
     if (!$to || !filter_var($to, FILTER_VALIDATE_EMAIL)) {

@@ -49,20 +49,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $step === 'request') {
             // Log the request
             log_auth_attempt('forgot_password', $email, true, 'Reset token generated');
 
-            // In production, send email to user and admin
-            // For now, show token for demo (in production, remove this)
-            $resetUrl = "http://" . $_SERVER['HTTP_HOST'] . "/forgot-password.php?step=reset&token=" . $resetToken;
+            $resetUrl = "http://" . $_SERVER['HTTP_HOST'] . rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'])), '/') . "/forgot-password.php?step=reset&token=" . $resetToken;
             
             $success = "Yêu cầu đặt lại mật khẩu đã được tạo!";
-            $success .= "<br><small class='text-muted'>Vui lòng truy cập: <a href='{$resetUrl}'>Đặt lại mật khẩu</a></small>";
+            $success .= "<br><small class='text-muted'>Vui lòng kiểm tra hộp thư email để nhận hướng dẫn đặt lại mật khẩu.</small>";
             
-            $mailBody = "
-                <h2>Yeu cau dat lai mat khau</h2>
-                <p>Xin chao " . htmlspecialchars($user['fullname']) . ",</p>
-                <p>Ban vua yeu cau dat lai mat khau tai NHK Mobile. Lien ket nay co hieu luc trong 1 gio.</p>
-                <p><a href='{$resetUrl}'>Dat lai mat khau</a></p>
-            ";
-            send_store_mail($user['email'], 'NHK Mobile - Dat lai mat khau', $mailBody, $pdo);
+            $name = htmlspecialchars($user['fullname']);
+            $bodyHtml = "<p style='margin:0 0 16px;color:#3c3c43'>Xin chào <strong>$name</strong>,</p>"
+                . "<p style='margin:0 0 16px;color:#3c3c43'>Bạn vừa yêu cầu đặt lại mật khẩu tại <strong>NHK Mobile</strong>. Nhấn nút bên dưới để tạo mật khẩu mới (liên kết có hiệu lực trong <strong>1 giờ</strong>):</p>"
+                . "<p style='text-align:center;margin:0 0 16px'>"
+                . "<a href='{$resetUrl}' style='display:inline-block;padding:14px 32px;background:#007AFF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:15px'>Đặt lại mật khẩu</a></p>"
+                . "<p style='margin:0 0 8px;color:#86868b;font-size:13px'>Hoặc copy đường dẫn này vào trình duyệt:</p>"
+                . "<p style='margin:0;padding:12px;background:#f8f8fa;border-radius:6px;font-size:12px;color:#3c3c43;word-break:break-all'>{$resetUrl}</p>"
+                . "<p style='margin:16px 0 0;color:#86868b;font-size:13px'>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.</p>";
+            $mailBody = build_email_html("Yêu cầu đặt lại mật khẩu", $bodyHtml);
+            send_store_mail($user['email'], 'NHK Mobile - Đặt lại mật khẩu', $mailBody, $pdo);
 
             clear_rate_limit('forgot_password');
         } else {
