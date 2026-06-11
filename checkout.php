@@ -148,7 +148,7 @@ if (isset($_POST['place_order'])) {
                     . "<th style='padding:10px 12px;text-align:center;font-size:13px;color:#3c3c43'>SL</th>"
                     . "<th style='padding:10px 12px;text-align:right;font-size:13px;color:#3c3c43'>Thành tiền</th>"
                     . "</tr></thead><tbody>$itemRows</tbody></table>"
-                    . "<p style='margin:0 0 8px;font-size:16px;text-align:right'><strong>Tổng cộng: $totalFormatted₫</strong></p>"
+                    . "<p style='margin:0 0 8px;font-size:16px;text-align:right'><strong>Tổng cộng: {$totalFormatted}₫</strong></p>"
                     . "<p style='margin:0 0 8px;color:#3c3c43'>Phương thức thanh toán: <strong>$payment</strong></p>"
                     . "<p style='margin:0 0 8px;color:#3c3c43'>Địa chỉ giao hàng: " . htmlspecialchars($address) . "</p>"
                     . "<p style='margin:24px 0 0;padding:16px;background:#fff3cd;border-radius:8px;color:#856404;font-size:13px'>"

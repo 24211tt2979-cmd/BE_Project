@@ -157,6 +157,7 @@ function send_store_mail($to, $subject, $message, $pdo = null) {
             $mail->SMTPSecure = defined('SMTP_SECURE') ? SMTP_SECURE : PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port       = defined('SMTP_PORT')   ? SMTP_PORT   : 587;
             $mail->CharSet    = 'UTF-8';
+            $mail->Timeout    = 10;                  // Timeout 10 giây để tránh treo script 30 giây nếu server chặn cổng
 
             $mail->setFrom($fromEmail, $fromName);
             $mail->addAddress($to);
