@@ -10,6 +10,10 @@
  * Version: 2.2
  * Date: 2026-04-19
  */
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 // QUAN TRỌNG: Phải load auth_functions.php TRƯỚC để nó quản lý session
 // Không gọi session_start() ở đây vì auth_functions.php đã lo
 require_once 'includes/auth_functions.php';
