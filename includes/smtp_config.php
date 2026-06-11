@@ -18,8 +18,8 @@
  */
 
 define('SMTP_HOST',       'smtp.gmail.com');    // smtp.gmail.com | smtp-relay.brevo.com
-define('SMTP_PORT',       587);                  // 587 (TLS) | 465 (SSL)
-define('SMTP_SECURE',     'tls');                // tls | ssl
+define('SMTP_PORT',       465);                  // 587 (TLS) | 465 (SSL)
+define('SMTP_SECURE',     'ssl');                // tls | ssl
 define('SMTP_AUTH',       true);                 // Bật xác thực
 
 // ---- ĐỔI 2 DÒNG NÀY THÀNH THÔNG TIN THẬT CỦA BẠN ----
