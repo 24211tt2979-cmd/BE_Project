@@ -168,7 +168,7 @@ function send_store_mail($to, $subject, $message, $pdo = null) {
             $mail->send();
             error_log("[Mail] ✅ Gửi thành công (SMTP) → $to | $subject");
             return true;
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             error_log("[Mail] ❌ PHPMailer lỗi: " . $e->getMessage() . " | To: $to | Subject: $subject");
             // Không fallback về mail() vì SMTP đã cấu hình nhưng lỗi
             return false;

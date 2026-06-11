@@ -173,7 +173,7 @@ if (isset($_POST['place_order'])) {
             // Chuyển hướng sang trang thông báo thành công
             header("Location: checkout.php?order=success");
             exit;
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             error_log("[Checkout] Order creation error: " . $e->getMessage());
             $error = "Có lỗi xảy ra khi tạo đơn hàng: " . $e->getMessage() . ". Vui lòng thử lại hoặc liên hệ cửa hàng.";
         }
