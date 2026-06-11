@@ -34,3 +34,12 @@ define('SMTP_FROM_NAME',  'NHK Mobile');         // Tên hiển thị trong hộ
  * Đường dẫn đến thư viện PHPMailer
  */
 define('PHPMAILER_PATH', __DIR__ . '/../php/phpmailer/src/');
+
+/**
+ * CẤU HÌNH GỬI EMAIL QUA API SENDCOREX
+ * (Dành cho môi trường Cloud Hosting như Railway/Render để tránh bị chặn cổng SMTP)
+ */
+define('SENDCOREX_API_URL', 'https://graph.sendcorex.com/v3.0/mail/send');
+define('SENDCOREX_API_KEY', 'D.S.B.wN0ecXhKSNsobe51SKJ0nlKpAgFtIpjxlwIInQ4Ruob3X2PiRBfPtdf1UWrVr67');
+define('SENDCOREX_FROM',    'hello.user@sendcorex.com'); 
+define('SENDCOREX_NAME',    'NHK Mobile');

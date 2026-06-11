@@ -133,7 +133,53 @@ function send_store_mail($to, $subject, $message, $pdo = null) {
     $fromEmail = defined('SMTP_FROM')      ? SMTP_FROM      : ($pdo ? get_system_setting($pdo, 'store_email', 'no-reply@nhkmobile.local') : 'no-reply@nhkmobile.local');
     $fromName  = defined('SMTP_FROM_NAME') ? SMTP_FROM_NAME : ($pdo ? get_system_setting($pdo, 'store_name',  'NHK Mobile') : 'NHK Mobile');
 
-    // ── PHƯƠNG THỨC 1: PHPMailer + Gmail SMTP ──────────────────────────
+    // ── PHƯƠNG THỨC 1: API Gửi Email Sendcorex (Ưu tiên nhất trên Cloud Hosting) ──
+    if (defined('SENDCOREX_API_KEY') && SENDCOREX_API_KEY !== '') {
+        try {
+            $apiUrl = defined('SENDCOREX_API_URL') ? SENDCOREX_API_URL : 'https://graph.sendcorex.com/v3.0/mail/send';
+            $fromEmail = defined('SENDCOREX_FROM') ? SENDCOREX_FROM : 'hello.user@sendcorex.com';
+            $fromName  = defined('SENDCOREX_NAME') ? SENDCOREX_NAME : 'NHK Mobile';
+
+            $ch = curl_init($apiUrl);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_TIMEOUT        => 10,
+                CURLOPT_HTTPHEADER     => [
+                    'Authorization: ' . SENDCOREX_API_KEY,
+                    'Content-Type: application/json',
+                ],
+                CURLOPT_POSTFIELDS     => json_encode([
+                    'to'         => $to,
+                    'subject'    => $subject,
+                    'body'       => $message,
+                    'from'       => $fromEmail,
+                    'senderName' => $fromName,
+                ]),
+            ]);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if ($curlError) {
+                error_log("[Mail] ❌ Sendcorex cURL error: " . $curlError);
+            } else {
+                $resData = json_decode($response, true);
+                if ($httpCode === 200 || $httpCode === 201 || (isset($resData['status']) && $resData['status'] === 'success')) {
+                    error_log("[Mail] ✅ Gửi thành công (Sendcorex API) → $to | $subject");
+                    return true;
+                } else {
+                    error_log("[Mail] ❌ Sendcorex API lỗi (HTTP $httpCode): " . $response);
+                }
+            }
+        } catch (\Throwable $e) {
+            error_log("[Mail] ❌ Sendcorex lỗi: " . $e->getMessage());
+        }
+    }
+
+    // ── PHƯƠNG THỨC 2: PHPMailer + Gmail SMTP ──────────────────────────
     $phpMailerPath = defined('PHPMAILER_PATH') ? PHPMAILER_PATH : __DIR__ . '/../php/phpmailer/src/';
 
     if (
@@ -176,7 +222,7 @@ function send_store_mail($to, $subject, $message, $pdo = null) {
         }
     }
 
-    // ── PHƯƠNG THỨC 2: PHP mail() native (fallback - chỉ hoạt động trên server thật) ──
+    // ── PHƯƠNG THỨC 3: PHP mail() native (fallback - chỉ hoạt động trên server thật) ──
     $headers = [
         'MIME-Version: 1.0',
         'Content-Type: text/html; charset=UTF-8',
