@@ -441,7 +441,7 @@ include 'includes/header.php';
                             <div>
                                 <label class="profile-label">Mật khẩu hiện tại *</label>
                                 <div class="position-relative">
-                                    <input type="text" name="current_password" id="curPw"
+                                    <input type="password" name="current_password" id="curPw"
                                            class="form-control profile-input pe-5" required placeholder="••••••••">
                                     <span class="position-absolute top-50 end-0 translate-middle-y pe-3 text-muted"
                                           style="cursor:pointer;" onclick="togglePw('curPw',this)">
@@ -468,7 +468,14 @@ include 'includes/header.php';
                             </div>
                             <div>
                                 <label class="profile-label">Xác nhận mật khẩu mới *</label>
-                                <input type="password" name="confirm_password" class="form-control profile-input" required placeholder="••••••••">
+                                <div class="position-relative">
+                                    <input type="password" name="confirm_password" id="confirmPw"
+                                           class="form-control profile-input pe-5" required placeholder="••••••••">
+                                    <span class="position-absolute top-50 end-0 translate-middle-y pe-3 text-muted"
+                                          style="cursor:pointer;" onclick="togglePw('confirmPw',this)">
+                                        <i class="bi bi-eye"></i>
+                                    </span>
+                                </div>
                             </div>
                         </div>
                         <div class="d-flex justify-content-end mt-4">
