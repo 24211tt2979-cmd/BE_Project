@@ -1,315 +1,392 @@
 <?php
 /**
- * NHK Mobile - Search Dropdown Bar
- * 
- * Description: Compact animated search bar that slides down from navbar.
- * Replaces the old full-screen overlay for a less intrusive UX.
- * 
- * Author: NguyenHuuKhanh
- * Version: 3.0
- * Date: 2026-05-16
+ * NHK Mobile - Search Overlay
+ *
+ * Premium search with live suggestions, keyboard nav, and beautiful UI.
  */
 ?>
-<!-- Search Dropdown Bar -->
-<div id="searchOverlay" class="search-dropdown-bar d-none">
-    <div class="search-dropdown-inner">
-        <div class="container-wide">
-            <div class="search-bar-row">
-                <!-- Search Input -->
-                <div class="search-bar-input-wrap">
-                    <i class="bi bi-search search-bar-icon"></i>
-                    <input type="text" id="searchInputMain"
-                           class="search-bar-input"
-                           placeholder="Tìm kiếm điện thoại, thương hiệu..."
-                           autocomplete="off">
-                    <button id="searchBarClear" class="search-bar-clear d-none" title="Xóa">
-                        <i class="bi bi-x-circle-fill"></i>
-                    </button>
-                </div>
-                <!-- Close -->
-                <button id="closeSearch" class="search-bar-close" title="Đóng">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
-
-            <!-- Quick Tags -->
-            <div id="quickSuggestions" class="search-quick-tags">
-                <span class="search-quick-label">Gợi ý nhanh:</span>
-                <a href="product.php?category=Apple" class="search-tag">iPhone 17 Pro</a>
-                <a href="product.php?category=Samsung" class="search-tag">Samsung S25</a>
-                <a href="product.php?category=Xiaomi" class="search-tag">Xiaomi Fold</a>
-                <a href="product.php?category=Oppo" class="search-tag">Oppo Find</a>
-            </div>
-
-            <!-- Live Results -->
-            <div id="searchResults" class="search-results-panel d-none">
-                <!-- Populated by JS -->
-            </div>
+<!-- Search Overlay -->
+<div id="searchOverlay" class="search-overlay">
+  <div class="search-overlay-backdrop" id="searchBackdrop"></div>
+  <div class="search-overlay-panel">
+    <div class="container-wide">
+      <!-- Search Bar -->
+      <div class="so-bar">
+        <div class="so-input-wrap">
+          <i class="bi bi-search so-search-icon"></i>
+          <input type="text" id="searchInputMain" class="so-input"
+                 placeholder="Tìm kiếm điện thoại, thương hiệu, phụ kiện..."
+                 autocomplete="off" autocapitalize="none">
+          <button id="searchBarClear" class="so-clear d-none" title="Xóa">
+            <i class="bi bi-x-lg"></i>
+          </button>
         </div>
+        <button id="closeSearch" class="so-close-btn" title="Đóng (Esc)">
+          <i class="bi bi-arrow-left"></i>
+          <span>Quay lại</span>
+        </button>
+      </div>
+
+      <!-- Loading indicator -->
+      <div id="searchLoading" class="so-loading d-none">
+        <div class="so-loading-spinner"></div>
+        <span>Đang tìm kiếm...</span>
+      </div>
+
+      <!-- Quick suggestions (default state) -->
+      <div id="quickSuggestions" class="so-quick">
+        <div class="so-quick-header">
+          <i class="bi bi-lightning-charge-fill"></i>
+          <span>Gợi ý nhanh</span>
+        </div>
+        <div class="so-quick-tags">
+          <a href="product.php?category=Apple" class="so-tag"><i class="bi bi-apple"></i> iPhone 17 Pro</a>
+          <a href="product.php?category=Samsung" class="so-tag"><i class="bi bi-phone"></i> Galaxy S25</a>
+          <a href="product.php?category=Xiaomi" class="so-tag"><i class="bi bi-lightning-charge"></i> Xiaomi 17 Ultra</a>
+          <a href="product.php?category=Oppo" class="so-tag"><i class="bi bi-camera"></i> Oppo Find N5</a>
+          <a href="product.php" class="so-tag so-tag-all"><i class="bi bi-grid-3x3-gap"></i> Tất cả sản phẩm</a>
+        </div>
+      </div>
+
+      <!-- Results panel -->
+      <div id="searchResults" class="so-results d-none"></div>
+
+      <!-- No results -->
+      <div id="searchNoResult" class="so-no-result d-none">
+        <div class="so-no-result-icon"><i class="bi bi-search"></i></div>
+        <h4>Không tìm thấy kết quả</h4>
+        <p>Thử thay đổi từ khóa hoặc duyệt danh mục bên dưới</p>
+        <div class="so-no-result-tags">
+          <a href="product.php?category=Apple" class="so-tag">iPhone</a>
+          <a href="product.php?category=Samsung" class="so-tag">Samsung</a>
+          <a href="product.php?category=Xiaomi" class="so-tag">Xiaomi</a>
+          <a href="product.php" class="so-tag">Tất cả</a>
+        </div>
+      </div>
     </div>
+  </div>
 </div>
 
-<!-- Backdrop (dim, không che toàn bộ) -->
-<div id="searchBackdrop" class="search-backdrop d-none"></div>
-
 <style>
-/* ── Search Dropdown Bar ── */
-.search-dropdown-bar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 9000;
-    transform: translateY(-110%);
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 0.35s ease;
-    opacity: 0;
+/* ───── OVERLAY ───── */
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+}
+.search-overlay.is-open {
+  display: flex;
+}
+.search-overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.search-overlay-panel {
+  position: relative;
+  width: 100%;
+  max-width: 780px;
+  margin: 60px auto 0;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.2);
+  padding: 28px 32px 32px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  animation: so-slide-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes so-slide-in {
+  from { opacity: 0; transform: translateY(-20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+body.dark-mode .search-overlay-panel {
+  background: #1c1c1e;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.5);
 }
 
-.search-dropdown-bar.is-open {
-    transform: translateY(0);
-    opacity: 1;
+/* ───── SEARCH BAR ───── */
+.so-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.so-input-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.so-search-icon {
+  position: absolute;
+  left: 16px;
+  font-size: 1.1rem;
+  color: #8e8e93;
+  pointer-events: none;
+  transition: color 0.2s;
+}
+.so-input {
+  width: 100%;
+  padding: 14px 48px 14px 48px;
+  background: #f2f2f7;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  font-size: 1rem;
+  color: #1d1d1f;
+  outline: none;
+  transition: all 0.25s;
+  font-family: inherit;
+}
+.so-input::placeholder { color: #8e8e93; }
+.so-input:focus {
+  background: #fff;
+  border-color: #007AFF;
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12);
+}
+.so-input:focus ~ .so-search-icon,
+.so-input:focus + .so-search-icon { color: #007AFF; }
+body.dark-mode .so-input {
+  background: #2c2c2e;
+  color: #f0f0f0;
+}
+body.dark-mode .so-input:focus {
+  background: #2c2c2e;
+  border-color: #0a84ff;
+  box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.2);
+}
+.so-clear {
+  position: absolute;
+  right: 12px;
+  background: #8e8e93;
+  border: none;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.so-clear:hover { background: #636366; transform: scale(1.1); }
+body.dark-mode .so-clear { background: #48484a; }
+body.dark-mode .so-clear:hover { background: #636366; }
+
+.so-close-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #007AFF;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 12px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.so-close-btn:hover { background: rgba(0,122,255,0.08); }
+body.dark-mode .so-close-btn { color: #0a84ff; }
+body.dark-mode .so-close-btn:hover { background: rgba(10,132,255,0.12); }
+
+/* ───── LOADING ───── */
+.so-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0 8px;
+  color: #8e8e93;
+  font-size: 0.9rem;
+}
+.so-loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid #e0e0e0;
+  border-top-color: #007AFF;
+  border-radius: 50%;
+  animation: so-spin 0.7s linear infinite;
+}
+@keyframes so-spin { to { transform: rotate(360deg); } }
+body.dark-mode .so-loading-spinner { border-color: #3a3a3c; border-top-color: #0a84ff; }
+
+/* ───── QUICK SUGGESTIONS ───── */
+.so-quick { margin-top: 20px; }
+.so-quick-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8e8e93;
+  margin-bottom: 12px;
+}
+.so-quick-header i { color: #f59e0b; }
+.so-quick-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.so-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  background: #f2f2f7;
+  color: #1d1d1f;
+  border: 1px solid transparent;
+  border-radius: 40px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.so-tag:hover {
+  background: #007AFF;
+  color: #fff;
+  border-color: #007AFF;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,122,255,0.25);
+}
+.so-tag i { font-size: 0.9rem; }
+.so-tag-all { background: #e8f0fe; color: #007AFF; font-weight: 600; }
+.so-tag-all:hover { background: #007AFF; color: #fff; }
+body.dark-mode .so-tag { background: #2c2c2e; color: #f0f0f0; }
+body.dark-mode .so-tag:hover { background: #0a84ff; color: #fff; }
+body.dark-mode .so-tag-all { background: rgba(10,132,255,0.15); color: #0a84ff; }
+
+/* ───── RESULTS ───── */
+.so-results { margin-top: 16px; }
+.so-results-group-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8e8e93;
+  margin: 16px 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f0f0f0;
+}
+body.dark-mode .so-results-group-label { border-bottom-color: #2c2c2e; }
+
+.so-result-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  text-decoration: none;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+.so-result-item:hover,
+.so-result-item.highlighted {
+  background: #f2f2f7;
+}
+body.dark-mode .so-result-item:hover,
+body.dark-mode .so-result-item.highlighted {
+  background: #2c2c2e;
+}
+.so-result-img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  background: #fff;
+  padding: 6px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  border: 1px solid #f0f0f0;
+}
+body.dark-mode .so-result-img { border-color: #3a3a3c; }
+.so-result-info { flex: 1; min-width: 0; }
+.so-result-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #1d1d1f;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body.dark-mode .so-result-name { color: #f0f0f0; }
+.so-result-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+}
+.so-result-category {
+  color: #8e8e93;
+  background: #f0f0f0;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+body.dark-mode .so-result-category { background: #3a3a3c; color: #a0a0a0; }
+.so-result-stock {
+  color: #22c55e;
+  font-weight: 500;
+}
+.so-result-stock.out {
+  color: #ef4444;
+}
+.so-result-price {
+  font-weight: 700;
+  color: #007AFF;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+body.dark-mode .so-result-price { color: #0a84ff; }
+
+/* ───── NO RESULT ───── */
+.so-no-result {
+  text-align: center;
+  padding: 40px 0 20px;
+}
+.so-no-result-icon {
+  font-size: 2.5rem;
+  color: #c7c7cc;
+  margin-bottom: 12px;
+}
+.so-no-result h4 {
+  font-weight: 700;
+  color: #1d1d1f;
+  margin-bottom: 6px;
+}
+body.dark-mode .so-no-result h4 { color: #f0f0f0; }
+.so-no-result p {
+  color: #8e8e93;
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+.so-no-result-tags {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
-.search-dropdown-inner {
-    background: rgba(255, 255, 255, 0.97);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    padding: 18px 0 14px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
-}
+/* ───── SCROLLBAR ───── */
+.search-overlay-panel::-webkit-scrollbar { width: 5px; }
+.search-overlay-panel::-webkit-scrollbar-track { background: transparent; }
+.search-overlay-panel::-webkit-scrollbar-thumb { background: #c7c7cc; border-radius: 10px; }
+body.dark-mode .search-overlay-panel::-webkit-scrollbar-thumb { background: #3a3a3c; }
 
-/* Dark mode */
-body.dark-mode .search-dropdown-inner {
-    background: rgba(18, 18, 18, 0.97);
-    border-bottom-color: rgba(255,255,255,0.08);
+/* ───── RESPONSIVE ───── */
+@media (max-width: 820px) {
+  .search-overlay-panel {
+    margin: 0;
+    max-height: 100vh;
+    border-radius: 0;
+    padding: 16px 20px 24px;
+  }
+  .so-close-btn span { display: none; }
 }
-
-/* Row layout */
-.search-bar-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-/* Input wrap */
-.search-bar-input-wrap {
-    flex: 1;
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.search-bar-icon {
-    position: absolute;
-    left: 16px;
-    font-size: 1.05rem;
-    color: #8e8e93;
-    pointer-events: none;
-    transition: color 0.2s;
-}
-
-.search-bar-input {
-    width: 100%;
-    padding: 13px 44px 13px 46px;
-    background: rgba(118, 118, 128, 0.1);
-    border: 1.5px solid transparent;
-    border-radius: 14px;
-    font-size: 1rem;
-    color: #1d1d1f;
-    outline: none;
-    transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
-    font-family: inherit;
-}
-
-.search-bar-input::placeholder { color: #8e8e93; }
-
-.search-bar-input:focus {
-    background: #fff;
-    border-color: var(--primary, #007AFF);
-    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
-}
-
-.search-bar-input:focus + .search-bar-icon { color: var(--primary, #007AFF); }
-
-body.dark-mode .search-bar-input {
-    background: rgba(255,255,255,0.08);
-    color: #f0f0f0;
-}
-body.dark-mode .search-bar-input:focus {
-    background: rgba(255,255,255,0.12);
-}
-
-/* Clear btn */
-.search-bar-clear {
-    position: absolute;
-    right: 12px;
-    background: none;
-    border: none;
-    color: #8e8e93;
-    font-size: 1rem;
-    cursor: pointer;
-    padding: 4px;
-    transition: color 0.2s, transform 0.2s;
-}
-.search-bar-clear:hover { color: #1d1d1f; transform: scale(1.15); }
-body.dark-mode .search-bar-clear:hover { color: #f0f0f0; }
-
-/* Close button */
-.search-bar-close {
-    background: rgba(118,118,128,0.12);
-    border: none;
-    border-radius: 50%;
-    width: 38px;
-    height: 38px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.95rem;
-    color: #3c3c43;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: all 0.2s;
-}
-.search-bar-close:hover {
-    background: rgba(118,118,128,0.22);
-    transform: rotate(90deg);
-}
-body.dark-mode .search-bar-close { color: #f0f0f0; background: rgba(255,255,255,0.1); }
-body.dark-mode .search-bar-close:hover { background: rgba(255,255,255,0.18); }
-
-/* Quick Tags */
-.search-quick-tags {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(0,0,0,0.06);
-}
-body.dark-mode .search-quick-tags { border-top-color: rgba(255,255,255,0.07); }
-
-.search-quick-label {
-    font-size: 0.78rem;
-    color: #8e8e93;
-    font-weight: 500;
-    white-space: nowrap;
-}
-
-.search-tag {
-    display: inline-block;
-    padding: 5px 14px;
-    background: rgba(0,122,255,0.08);
-    color: var(--primary, #007AFF);
-    border: 1px solid rgba(0,122,255,0.18);
-    border-radius: 20px;
-    font-size: 0.82rem;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all 0.2s;
-    white-space: nowrap;
-}
-.search-tag:hover {
-    background: var(--primary, #007AFF);
-    color: #fff;
-    border-color: var(--primary, #007AFF);
-    transform: translateY(-1px);
-}
-
-/* Live Results Panel */
-.search-results-panel {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(0,0,0,0.06);
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 10px;
-    max-height: 320px;
-    overflow-y: auto;
-    padding-right: 4px;
-}
-body.dark-mode .search-results-panel { border-top-color: rgba(255,255,255,0.07); }
-
-.search-results-panel::-webkit-scrollbar { width: 5px; }
-.search-results-panel::-webkit-scrollbar-track { background: transparent; }
-.search-results-panel::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
-
-/* Result Cards */
-.suggestion-card {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    background: rgba(118,118,128,0.07);
-    border: 1px solid rgba(0,0,0,0.06);
-    border-radius: 14px;
-    text-decoration: none !important;
-    transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
-}
-.suggestion-card:hover {
-    background: rgba(0,122,255,0.06);
-    border-color: rgba(0,122,255,0.2);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-}
-body.dark-mode .suggestion-card {
-    background: rgba(255,255,255,0.05);
-    border-color: rgba(255,255,255,0.08);
-}
-body.dark-mode .suggestion-card:hover {
-    background: rgba(0,122,255,0.12);
-    border-color: rgba(0,122,255,0.3);
-}
-
-.suggestion-img {
-    width: 52px;
-    height: 52px;
-    object-fit: contain;
-    background: #fff;
-    padding: 6px;
-    border-radius: 10px;
-    flex-shrink: 0;
-    border: 1px solid rgba(0,0,0,0.06);
-}
-
-.suggestion-info { flex: 1; overflow: hidden; }
-.suggestion-name {
-    color: #1d1d1f;
-    font-weight: 600;
-    font-size: 0.88rem;
-    margin-bottom: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-body.dark-mode .suggestion-name { color: #f0f0f0; }
-
-.suggestion-price {
-    color: var(--primary, #007AFF);
-    font-weight: 600;
-    font-size: 0.82rem;
-}
-
-/* No results */
-.search-no-result {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 20px;
-    color: #8e8e93;
-    font-size: 0.9rem;
-}
-
-/* Backdrop */
-.search-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.25);
-    z-index: 8999;
-    backdrop-filter: blur(2px);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-.search-backdrop.is-open { opacity: 1; }
 </style>

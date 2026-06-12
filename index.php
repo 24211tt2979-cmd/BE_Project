@@ -13,15 +13,31 @@ require_once 'includes/auth_functions.php';
 require_once 'includes/db.php';
 
 /** @var PDO $pdo */
+$settings = get_system_settings($pdo);
 
-// 1. Fetch featured products (limit 8)
-$stmt = $pdo->query("SELECT * FROM products ORDER BY is_featured DESC, created_at DESC LIMIT 8");
+// 1. Fetch featured products
+$featuredCount = (int)($settings['home_featured_count'] ?? 8);
+$stmt = $pdo->query("SELECT * FROM products ORDER BY is_featured DESC, created_at DESC LIMIT $featuredCount");
 $featuredProducts = $stmt->fetchAll();
 
-// 2. Fetch "Dành cho bạn" - 8 sản phẩm khác, không trùng với featured
+// 2. Fetch "Sản phẩm bán chạy"
+$bestSellingCount = (int)($settings['home_best_selling_count'] ?? 4);
+$bestSellingStmt = $pdo->query("
+    SELECT p.*, COALESCE(SUM(oi.quantity), 0) as total_sold
+    FROM products p
+    LEFT JOIN order_items oi ON oi.product_id = p.id
+    LEFT JOIN orders o ON o.id = oi.order_id AND (o.status = 'Hoàn thành' OR o.status = 'Completed')
+    GROUP BY p.id
+    ORDER BY total_sold DESC
+    LIMIT $bestSellingCount
+");
+$bestSellingProducts = $bestSellingStmt->fetchAll();
+
+// 3. Fetch "Dành cho bạn"
+$forYouCount = (int)($settings['home_for_you_count'] ?? 8);
 $featuredIds = array_column($featuredProducts, 'id');
 $excludeIds = !empty($featuredIds) ? implode(',', array_map('intval', $featuredIds)) : '0';
-$forYouStmt = $pdo->query("SELECT * FROM products WHERE id NOT IN ($excludeIds) ORDER BY RAND() LIMIT 8");
+$forYouStmt = $pdo->query("SELECT * FROM products WHERE id NOT IN ($excludeIds) ORDER BY RAND() LIMIT $forYouCount");
 $forYouProducts = $forYouStmt->fetchAll();
 
 try {
@@ -707,7 +723,7 @@ include 'includes/header.php';
         <div class="container-wide">
             <div class="section-title-box reveal">
                 <span class="section-subtitle">Sản phẩm nổi bật</span>
-                <h2 class="display-5 fw-bold">Đỉnh phẩm công nghệ mới.</h2>
+                <h2 class="display-5 fw-bold"><?php echo htmlspecialchars($settings['home_featured_title'] ?? 'Đỉnh phẩm công nghệ mới.'); ?></h2>
             </div>
 
             <div class="product-grid-new reveal-stagger">
@@ -751,54 +767,37 @@ include 'includes/header.php';
         </div>
     </section>
 
-    <!-- FLASH SALE SECTION -->
+    <!-- BEST SELLING SECTION -->
     <section class="flash-sale-section">
         <div class="container-wide">
             <div class="flash-sale-header reveal">
                 <div class="flash-sale-title">
-                    <i class="bi bi-lightning-charge-fill flash-icon"></i>
-                    <h2>Flash Sale</h2>
+                    <i class="bi bi-fire flash-icon"></i>
+                    <h2><?php echo htmlspecialchars($settings['home_best_selling_title'] ?? 'Sản phẩm bán chạy'); ?></h2>
                 </div>
-                <div class="countdown-timer">
-                    <div class="countdown-item">
-                        <div class="countdown-number" id="hours">02</div>
-                        <div class="countdown-label">Giờ</div>
-                    </div>
-                    <span class="countdown-separator">:</span>
-                    <div class="countdown-item">
-                        <div class="countdown-number" id="minutes">45</div>
-                        <div class="countdown-label">Phút</div>
-                    </div>
-                    <span class="countdown-separator">:</span>
-                    <div class="countdown-item">
-                        <div class="countdown-number" id="seconds">30</div>
-                        <div class="countdown-label">Giây</div>
-                    </div>
+                <?php if (!empty($bestSellingProducts)): ?>
+                <div class="best-selling-badge">
+                    <i class="bi bi-star-fill"></i> Bán chạy nhất
                 </div>
+                <?php endif; ?>
             </div>
             <div class="product-grid-new">
-                <?php
-                // Lấy sản phẩm flash sale (ngẫu nhiên, giảm giá giả lập)
-                $flashSaleStmt = $pdo->query("SELECT * FROM products ORDER BY RAND() LIMIT 4");
-                $flashSaleProducts = $flashSaleStmt->fetchAll();
-                foreach ($flashSaleProducts as $p):
-                    $discountPercent = rand(10, 30);
-                    $salePrice = $p['price'] * (100 - $discountPercent) / 100;
+                <?php foreach ($bestSellingProducts as $p):
+                    $isHot = $p['total_sold'] > 0;
                 ?>
                     <div class="product-card-new" style="background: #fff; border: none;">
                         <a href="product-detail.php?id=<?php echo $p['id']; ?>">
                             <div class="product-img-box">
-                                <span class="badge-hot" style="background: #007AFF;">-<?php echo $discountPercent; ?>%</span>
+                                <?php if($isHot): ?>
+                                    <span class="badge-hot" style="background: #ef4444;">Đã bán <?php echo $p['total_sold']; ?></span>
+                                <?php endif; ?>
                                 <img src="assets/images/<?php echo $p['image']; ?>" alt="<?php echo $p['name']; ?>"
                                     onerror="this.src='https://placehold.co/300x400/f5f5f7/1d1d1f?text=Phone'">
                             </div>
                             <div class="product-info-new">
                                 <span class="p-cat"><?php echo $p['category']; ?></span>
                                 <h3 class="p-name"><?php echo $p['name']; ?></h3>
-                                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                                    <span style="font-size: 18px; font-weight: 800; color: #fff;"><?php echo number_format($salePrice, 0, ',', '.'); ?>₫</span>
-                                    <span style="font-size: 14px; color: rgba(255,255,255,0.7); text-decoration: line-through;"><?php echo number_format($p['price'], 0, ',', '.'); ?>₫</span>
-                                </div>
+                                <div class="p-price-new"><?php echo number_format($p['price'], 0, ',', '.'); ?>₫</div>
                                 <?php if(!empty($p['specs'])): ?>
                                 <div class="p-specs">
                                     <?php
@@ -819,7 +818,7 @@ include 'includes/header.php';
                 <?php endforeach; ?>
             </div>
             <div class="text-center mt-5">
-                <a href="product.php" class="btn-main btn-outline" style="background: rgba(255,255,255,0.15); color: #fff; border-color: rgba(255,255,255,0.3);">Xem tất cả Flash Sale</a>
+                <a href="product.php" class="btn-main btn-outline" style="background: rgba(255,255,255,0.15); color: #fff; border-color: rgba(255,255,255,0.3);">Xem tất cả sản phẩm</a>
             </div>
         </div>
     </section>
@@ -829,7 +828,7 @@ include 'includes/header.php';
         <div class="container-wide">
             <div class="section-title-box reveal">
                 <span class="section-subtitle">Gợi ý cho bạn</span>
-                <h2 class="display-5 fw-bold">Dành cho bạn.</h2>
+                <h2 class="display-5 fw-bold"><?php echo htmlspecialchars($settings['home_for_you_title'] ?? 'Dành cho bạn.'); ?></h2>
             </div>
             <div class="product-grid-new reveal-stagger">
                 <?php foreach ($forYouProducts as $p): 
@@ -1034,5 +1033,36 @@ function handleNewsletter(e) {
     });
 }
 </script>
+
+<!-- ===== GOOGLE MAP ===== -->
+<section class="index-map-section">
+    <div class="container-wide">
+        <div class="section-title-box text-center mb-5">
+            <span class="section-subtitle">Bản đồ</span>
+            <h2 class="display-5 fw-bold">Tìm chúng tôi trên Google Maps</h2>
+        </div>
+        <div class="rounded-4 overflow-hidden border shadow-sm">
+            <iframe
+                src="<?php echo htmlspecialchars($settings['map_embed_url'] ?? 'https://www.google.com/maps?q=Ho%20Chi%20Minh%20City&output=embed'); ?>"
+                width="100%"
+                height="420"
+                style="border:0; display:block;"
+                allowfullscreen=""
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                title="Bản đồ cửa hàng NHK Mobile"></iframe>
+        </div>
+    </div>
+</section>
+
+<style>
+.index-map-section {
+    padding: 60px 0;
+    background: #f8f8fa;
+}
+body.dark-mode .index-map-section {
+    background: #111;
+}
+</style>
 
 <?php include 'includes/footer.php'; ?>

@@ -118,6 +118,10 @@ HTML;
 }
 
 function send_store_mail($to, $subject, $message, $pdo = null) {
+    // Chức năng thông báo email đã được tắt theo yêu cầu
+    error_log("[Mail] ℹ️ Chức năng gửi mail đã được tắt: To: $to | Subject: $subject");
+    return true;
+
     // Validate email đầu vào
     if (!$to || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
         error_log("[Mail] Địa chỉ email không hợp lệ: $to");

@@ -37,7 +37,7 @@ $stmtO = $pdo->query("
         COUNT(*) as total_orders, 
         SUM(total_price) as total_rev 
     FROM orders 
-    WHERE status IN ('Completed', 'Hoàn thành', 'Đã duyệt')
+    WHERE status IN ('Completed', 'Hoàn thành')
 ");
 $orderStats = $stmtO->fetch(PDO::FETCH_ASSOC);
 $countOrders = (int)($orderStats['total_orders'] ?? 0);
@@ -64,7 +64,7 @@ while($row = $stmtList->fetch(PDO::FETCH_ASSOC)) {
     // Việt hóa trạng thái
     $st = $row['status'];
     $statusMap = [
-        'pending' => 'Chờ duyệt',
+        'pending' => 'Chờ xác nhận',
         'processing' => 'Đang xử lý',
         'completed' => 'Hoàn thành',
         'cancelled' => 'Đã hủy'

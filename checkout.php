@@ -108,7 +108,7 @@ if (isset($_POST['place_order'])) {
             // Thực hiện chèn đơn hàng vào bảng orders trong Postgres
             // Ghi chú: is_installment dùng string 'true'/'false' cho PostgreSQL BOOLEAN qua PDO
             $sqlOrder = "INSERT INTO orders (customer_name, customer_phone, customer_address, total_price, status, payment_method, user_id, is_installment) 
-                         VALUES (?, ?, ?, ?, 'Chờ duyệt', ?, ?, ?)";
+                         VALUES (?, ?, ?, ?, 'Chờ xác nhận', ?, ?, ?)";
             $stmtOrder = $pdo->prepare($sqlOrder);
             $stmtOrder->execute([$name, $phone, $address, $finalTotal, $payment, $userId, $isInstallmentVal]);
             
@@ -152,7 +152,7 @@ if (isset($_POST['place_order'])) {
                     . "<p style='margin:0 0 8px;color:#3c3c43'>Phương thức thanh toán: <strong>$payment</strong></p>"
                     . "<p style='margin:0 0 8px;color:#3c3c43'>Địa chỉ giao hàng: " . htmlspecialchars($address) . "</p>"
                     . "<p style='margin:24px 0 0;padding:16px;background:#fff3cd;border-radius:8px;color:#856404;font-size:13px'>"
-                    . "<strong>⏳ Trạng thái hiện tại: Chờ duyệt.</strong> Chúng tôi sẽ gọi điện xác nhận đơn hàng trong vòng 15–30 phút tới.</p>"
+                     . "<strong>⏳ Trạng thái hiện tại: Chờ xác nhận.</strong> Chúng tôi sẽ gọi điện xác nhận đơn hàng trong vòng 15–30 phút tới.</p>"
                     . "<p style='text-align:center;margin:20px 0 0'>"
                     . "<a href='" . rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'])), '/') . "/track_order.php?order_id=$orderId&phone=" . urlencode($phone) . "' style='display:inline-block;padding:12px 28px;background:#007AFF;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px'>Theo dõi đơn hàng</a></p>";
                 $mailBody = build_email_html("Đơn hàng #$orderId đã được tiếp nhận", $bodyHtml);
@@ -204,8 +204,9 @@ include 'includes/header.php';
                         }
                     } catch(Exception $e) {}
                 }
-                $isMomo = (strcasecmp($paymentMethod, 'Momo') === 0);
-                $isPayOS = (strcasecmp($paymentMethod, 'PayOS') === 0);
+                $isCOD = (strcasecmp($paymentMethod, 'COD') === 0);
+                $isTienMat = (strcasecmp($paymentMethod, 'TienMat') === 0);
+                $isGiaLap = (strcasecmp($paymentMethod, 'GiaLapOnline') === 0);
             ?>
                 <div class="row justify-content-center py-5">
                     <div class="col-md-10 col-lg-8">
@@ -223,95 +224,71 @@ include 'includes/header.php';
                                 </p>
                             </div>
                             
-                            <?php if ($isMomo): ?>
-                                <!-- Premium MoMo QR Card -->
-                                <div class="card border-0 rounded-4 shadow-sm p-4 mb-4 mx-auto text-center" style="max-width: 480px; background: linear-gradient(135deg, #ae2070, #80004c); color: white;">
+                            <?php if ($isTienMat): ?>
+                                <div class="card border-0 rounded-4 shadow-sm p-4 mb-4 mx-auto text-center" style="max-width: 480px; background: linear-gradient(135deg, #b8860b, #8a6d0b); color: white;">
                                     <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
-                                        <img src="https://upload.wikimedia.org/wikipedia/vi/f/fe/MoMo_Logo.svg" width="40" height="40" class="rounded-3 bg-white p-1">
-                                        <h5 class="fw-bold mb-0">Thanh toán qua Ví MoMo</h5>
+                                        <i class="bi bi-shop fs-3"></i>
+                                        <h5 class="fw-bold mb-0">Thanh toán tại cửa hàng</h5>
                                     </div>
-                                    <p class="small text-white-50 mb-4">Mở ứng dụng MoMo quét mã QR bên dưới để thanh toán đơn hàng</p>
-                                    
-                                    <div class="bg-white p-3 rounded-4 d-inline-block mx-auto mb-4 shadow-sm">
-                                        <?php 
-                                            $qrText = "2|99|0375352347|NGUYEN HUU KHANH||0|0|" . $orderTotal . "|NHK_ORD_" . $lastOrderId;
-                                            $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urlencode($qrText);
-                                        ?>
-                                        <img src="<?php echo $qrUrl; ?>" width="200" height="200" alt="Mã QR MoMo" class="d-block mx-auto">
-                                    </div>
-                                    
+                                    <p class="small text-white-50 mb-4">Vui lòng đến cửa hàng NHK Mobile để thanh toán và nhận hàng</p>
                                     <div class="text-start bg-black bg-opacity-25 rounded-4 p-3 fs-7 border border-white border-opacity-10">
                                         <div class="d-flex justify-content-between mb-2 pb-2 border-bottom border-white border-opacity-10">
-                                            <span class="text-white-50">Tài khoản nhận:</span>
-                                            <span class="fw-bold text-white">NGUYỄN HỮU KHÁNH</span>
-                                        </div>
-                                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom border-white border-opacity-10">
-                                            <span class="text-white-50">Số điện thoại:</span>
-                                            <span class="fw-bold text-white">0375 352 347</span>
+                                            <span class="text-white-50">Địa chỉ:</span>
+                                            <span class="fw-bold text-white">53 Đ. Võ Văn Ngân, Linh Chiểu, Thủ Đức</span>
                                         </div>
                                         <div class="d-flex justify-content-between mb-2 pb-2 border-bottom border-white border-opacity-10">
                                             <span class="text-white-50">Số tiền:</span>
                                             <span class="fw-bold text-warning fs-5"><?php echo number_format($orderTotal, 0, ',', '.'); ?>₫</span>
                                         </div>
                                         <div class="d-flex justify-content-between">
-                                            <span class="text-white-50">Nội dung chuyển:</span>
-                                            <span class="fw-bold text-warning">NHK_ORD_<?php echo $lastOrderId; ?></span>
+                                            <span class="text-white-50">Mã đơn:</span>
+                                            <span class="fw-bold text-warning">#ORD-<?php echo $lastOrderId; ?></span>
                                         </div>
                                     </div>
                                     <div class="mt-3 small text-white-50">
-                                        <i class="bi bi-shield-check me-1"></i> Hệ thống tự động duyệt sau khi nhận được tiền
+                                        <i class="bi bi-info-circle me-1"></i> Xuất trình mã đơn hàng khi thanh toán tại quầy
                                     </div>
                                 </div>
                             <?php endif; ?>
 
-                            <?php if ($isPayOS): ?>
-                                <!-- Premium PayOS VietQR Card -->
-                                <div class="card border-0 rounded-4 shadow-sm p-4 mb-4 mx-auto text-center" style="max-width: 480px; background: linear-gradient(135deg, #00468f, #0066cc); color: white;">
+                            <?php if ($isGiaLap): ?>
+                                <div class="card border-0 rounded-4 shadow-sm p-4 mb-4 mx-auto text-center" style="max-width: 480px; background: linear-gradient(135deg, #2c3e50, #3498db); color: white;">
                                     <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
-                                        <i class="bi bi-qr-code-scan fs-3"></i>
-                                        <h5 class="fw-bold mb-0">Thanh toán VietQR qua PayOS</h5>
+                                        <i class="bi bi-credit-card fs-3"></i>
+                                        <h5 class="fw-bold mb-0">Thanh toán trực tuyến (Giả lập)</h5>
                                     </div>
-                                    <p class="small text-white-50 mb-4">Quét mã QR bằng ứng dụng ngân hàng (Mobile Banking) để thanh toán tức thì</p>
+                                    <p class="small text-white-50 mb-4">Nhấn nút bên dưới để mô phỏng quá trình thanh toán trực tuyến</p>
                                     
-                                    <div class="bg-white p-3 rounded-4 d-inline-block mx-auto mb-4 shadow-sm">
-                                        <?php 
-                                            $qrUrl = "https://img.vietqr.io/image/MB-0375352347-compact2.png?amount=" . $orderTotal . "&addInfo=NHK_ORD_" . $lastOrderId . "&accountName=NGUYEN%20HUU%20KHANH";
-                                        ?>
-                                        <img src="<?php echo $qrUrl; ?>" width="200" height="200" alt="Mã QR VietQR" class="d-block mx-auto">
-                                    </div>
-                                    
-                                    <div class="text-start bg-black bg-opacity-25 rounded-4 p-3 fs-7 border border-white border-opacity-10">
+                                    <div class="text-start bg-black bg-opacity-25 rounded-4 p-3 fs-7 border border-white border-opacity-10 mb-4">
                                         <div class="d-flex justify-content-between mb-2 pb-2 border-bottom border-white border-opacity-10">
-                                            <span class="text-white-50">Ngân hàng:</span>
-                                            <span class="fw-bold text-white">MB Bank (Quân Đội)</span>
-                                        </div>
-                                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom border-white border-opacity-10">
-                                            <span class="text-white-50">Số tài khoản:</span>
-                                            <span class="fw-bold text-white">0375 352 347</span>
+                                            <span class="text-white-50">Mã đơn hàng:</span>
+                                            <span class="fw-bold text-white">#ORD-<?php echo $lastOrderId; ?></span>
                                         </div>
                                         <div class="d-flex justify-content-between mb-2 pb-2 border-bottom border-white border-opacity-10">
                                             <span class="text-white-50">Số tiền:</span>
                                             <span class="fw-bold text-warning fs-5"><?php echo number_format($orderTotal, 0, ',', '.'); ?>₫</span>
                                         </div>
                                         <div class="d-flex justify-content-between">
-                                            <span class="text-white-50">Nội dung chuyển:</span>
-                                            <span class="fw-bold text-warning">NHK_ORD_<?php echo $lastOrderId; ?></span>
+                                            <span class="text-white-50">Trạng thái:</span>
+                                            <span class="fw-bold text-warning" id="simStatusText">Chờ thanh toán</span>
                                         </div>
                                     </div>
-                                    <div class="mt-3 small text-white-50">
-                                        <i class="bi bi-shield-check me-1"></i> Hệ thống tự động xác nhận khi nhận được thanh toán
-                                    </div>
-                                    
-                                    <!-- Nút giả lập thanh toán Webhook cho khách/kiểm thử -->
-                                    <button type="button" id="btnSimulateWebhook" class="btn btn-warning btn-sm w-100 rounded-pill mt-3 fw-bold text-dark border-0">
-                                        <i class="bi bi-lightning-fill"></i> Giả lập thanh toán thành công (Webhook)
+
+                                    <button type="button" id="btnSimulatePayment" class="btn btn-warning btn-lg w-100 rounded-pill fw-bold text-dark border-0 shadow">
+                                        <i class="bi bi-lightning-fill"></i> Giả lập thanh toán thành công
                                     </button>
-                                    <div id="simulationMsg" class="mt-2 small text-warning"></div>
+                                    <div id="simulationMsg" class="mt-2 small"></div>
                                 </div>
                                 <script>
-                                document.getElementById('btnSimulateWebhook').addEventListener('click', function() {
+                                document.getElementById('btnSimulatePayment').addEventListener('click', function() {
+                                    const btn = this;
                                     const msgEl = document.getElementById('simulationMsg');
-                                    msgEl.textContent = 'Đang gửi webhook...';
+                                    const statusEl = document.getElementById('simStatusText');
+                                    
+                                    btn.disabled = true;
+                                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span> Đang xử lý...';
+                                    msgEl.className = 'mt-2 small text-warning';
+                                    msgEl.textContent = 'Đang mô phỏng thanh toán...';
                                     
                                     fetch('api/payos_webhook.php', {
                                         method: 'POST',
@@ -322,7 +299,7 @@ include 'includes/header.php';
                                                 orderCode: <?php echo $lastOrderId; ?>,
                                                 amount: <?php echo $orderTotal; ?>,
                                                 description: 'NHK_ORD_<?php echo $lastOrderId; ?>',
-                                                reference: 'SIMULATED_TX_REF_' + Math.floor(Math.random() * 1000000)
+                                                reference: 'SIM_TX_' + Math.floor(Math.random() * 1000000)
                                             }
                                         })
                                     })
@@ -330,16 +307,20 @@ include 'includes/header.php';
                                     .then(data => {
                                         if (data.status === 'success') {
                                             msgEl.className = 'mt-2 small text-success fw-bold';
-                                            msgEl.innerHTML = '<i class="bi bi-check-circle"></i> Đã kích hoạt Webhook! Tải lại trang trong 2 giây...';
-                                            setTimeout(() => {
-                                                location.reload();
-                                            }, 2000);
+                                            msgEl.innerHTML = '<i class="bi bi-check-circle me-1"></i> Thanh toán thành công! Đang tải lại...';
+                                            statusEl.textContent = 'Đã thanh toán';
+                                            statusEl.className = 'fw-bold text-success';
+                                            setTimeout(() => { location.reload(); }, 2000);
                                         } else {
+                                            btn.disabled = false;
+                                            btn.innerHTML = '<i class="bi bi-lightning-fill"></i> Giả lập thanh toán thành công';
                                             msgEl.className = 'mt-2 small text-danger';
                                             msgEl.textContent = 'Lỗi: ' + data.message;
                                         }
                                     })
                                     .catch(e => {
+                                        btn.disabled = false;
+                                        btn.innerHTML = '<i class="bi bi-lightning-fill"></i> Giả lập thanh toán thành công';
                                         msgEl.className = 'mt-2 small text-danger';
                                         msgEl.textContent = 'Lỗi kết nối';
                                     });
@@ -347,6 +328,7 @@ include 'includes/header.php';
                                 </script>
                             <?php endif; ?>
                             
+                            <?php if ($isCOD): ?>
                             <div class="bg-light rounded-4 p-4 mb-4 text-start border">
                                 <div class="d-flex align-items-center gap-3 mb-2">
                                     <i class="bi bi-info-circle text-primary"></i>
@@ -354,6 +336,27 @@ include 'includes/header.php';
                                 </div>
                                 <p class="small text-secondary mb-0">Chúng tôi sẽ gọi điện xác nhận lại với bạn trong vòng 15-30 phút tới để hoàn tất thủ tục vận chuyển.</p>
                             </div>
+                            <?php endif; ?>
+
+                            <?php if ($isTienMat): ?>
+                            <div class="bg-light rounded-4 p-4 mb-4 text-start border">
+                                <div class="d-flex align-items-center gap-3 mb-2">
+                                    <i class="bi bi-info-circle text-primary"></i>
+                                    <span class="fw-700 small text-uppercase letter-spacing text-muted">Hướng dẫn</span>
+                                </div>
+                                <p class="small text-secondary mb-0">Vui lòng đến cửa hàng NHK Mobile tại <strong>53 Đ. Võ Văn Ngân, Linh Chiểu, Thủ Đức</strong> để thanh toán và nhận hàng. Mang theo mã đơn hàng <strong>#ORD-<?php echo $lastOrderId; ?></strong> để được hỗ trợ nhanh nhất.</p>
+                            </div>
+                            <?php endif; ?>
+
+                            <?php if ($isGiaLap): ?>
+                            <div class="bg-light rounded-4 p-4 mb-4 text-start border">
+                                <div class="d-flex align-items-center gap-3 mb-2">
+                                    <i class="bi bi-info-circle text-primary"></i>
+                                    <span class="fw-700 small text-uppercase letter-spacing text-muted">Lưu ý</span>
+                                </div>
+                                <p class="small text-secondary mb-0">Đây là tính năng giả lập thanh toán trực tuyến dành cho mục đích kiểm thử. Đơn hàng sẽ được tự động duyệt sau khi thanh toán thành công.</p>
+                            </div>
+                            <?php endif; ?>
 
                             <div class="d-flex flex-column flex-md-row gap-3 justify-content-center mt-2">
                                 <a href="track_order.php?order_id=<?php echo $_SESSION['last_order_id']; ?>&phone=<?php echo urlencode($_SESSION['last_order_phone'] ?? ''); ?>" class="btn-main btn-primary px-5 py-3 rounded-pill fw-700 shadow text-decoration-none text-center">
@@ -394,24 +397,24 @@ include 'includes/header.php';
                                     <label class="form-label small fw-bold">Địa chỉ giao hàng</label>
                                     <textarea name="address" class="form-control rounded-3 border-0 bg-light p-3" rows="2" placeholder="Số nhà, tên đường, Phường/Xã, Quận/Huyện, Tỉnh/Thành phố (để trống = nhận tại cửa hàng)"><?php echo htmlspecialchars($userProfile['address'] ?? ''); ?></textarea>
                                 </div>
-                                <div class="col-md-12 mt-4">
-                                     <h2 class="fw-bold mb-4">Cách thức thanh toán</h2>
-                                     <div class="bg-white border rounded-4 p-3 mb-3 d-flex align-items-center gap-3">
-                                          <input type="radio" name="payment_method" value="COD" checked id="cod">
-                                          <label class="fw-bold mb-0 flex-grow-1" for="cod">Trả tiền mặt khi nhận hàng (COD)</label>
-                                          <i class="bi bi-cash text-success"></i>
-                                     </div>
-                                     <div class="bg-white border rounded-4 p-3 mb-3 d-flex align-items-center gap-3">
-                                          <input type="radio" name="payment_method" value="PayOS" id="payos">
-                                          <label class="fw-bold mb-0 flex-grow-1" for="payos">Thanh toán VietQR nhanh qua PayOS (Tự động duyệt)</label>
-                                          <i class="bi bi-qr-code-scan text-primary"></i>
-                                     </div>
-                                     <div class="bg-white border rounded-4 p-3 d-flex align-items-center gap-3">
-                                          <input type="radio" name="payment_method" value="Momo" id="momo">
-                                          <label class="fw-bold mb-0 flex-grow-1" for="momo">Chuyển khoản Online / Ví Momo</label>
-                                          <i class="bi bi-phone text-primary"></i>
-                                     </div>
-                                </div>
+                                 <div class="col-md-12 mt-4">
+                                      <h2 class="fw-bold mb-4">Cách thức thanh toán</h2>
+                                      <div class="bg-white border rounded-4 p-3 mb-3 d-flex align-items-center gap-3">
+                                           <input type="radio" name="payment_method" value="COD" checked id="cod">
+                                           <label class="fw-bold mb-0 flex-grow-1" for="cod">Trả tiền mặt khi nhận hàng (COD)</label>
+                                           <i class="bi bi-truck text-success"></i>
+                                      </div>
+                                      <div class="bg-white border rounded-4 p-3 mb-3 d-flex align-items-center gap-3">
+                                           <input type="radio" name="payment_method" value="TienMat" id="tienmat">
+                                           <label class="fw-bold mb-0 flex-grow-1" for="tienmat">Tiền mặt - Thanh toán tại cửa hàng</label>
+                                           <i class="bi bi-shop text-warning"></i>
+                                      </div>
+                                      <div class="bg-white border rounded-4 p-3 d-flex align-items-center gap-3">
+                                           <input type="radio" name="payment_method" value="GiaLapOnline" id="gialap">
+                                           <label class="fw-bold mb-0 flex-grow-1" for="gialap">Giả lập Online - Thanh toán trực tuyến mô phỏng</label>
+                                           <i class="bi bi-credit-card text-primary"></i>
+                                      </div>
+                                 </div>
                             </div>
                     </div>
 

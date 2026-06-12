@@ -39,15 +39,13 @@ include 'includes/header.php';
                 </div>
             </div>
             <div class="col-lg-7">
-                <div class="rounded-4 overflow-hidden border shadow-sm h-100" style="min-height:420px;">
-                    <iframe
-                        src="<?php echo htmlspecialchars($settings['map_embed_url'] ?? 'https://www.google.com/maps?q=Ho%20Chi%20Minh%20City&output=embed'); ?>"
-                        width="100%"
-                        height="100%"
-                        style="border:0; min-height:420px;"
-                        allowfullscreen=""
-                        loading="lazy"
-                        referrerpolicy="no-referrer-when-downgrade"></iframe>
+                <div class="bg-light rounded-4 p-5 h-100 border d-flex flex-column justify-content-center">
+                    <div class="text-center py-5">
+                        <i class="bi bi-geo-alt display-1 text-primary mb-4 d-block"></i>
+                        <h3 class="fw-bold">Ghé thăm cửa hàng</h3>
+                        <p class="text-secondary mb-1"><?php echo nl2br(htmlspecialchars($settings['store_address'] ?? '')); ?></p>
+                        <p class="text-secondary">Hotline: <?php echo htmlspecialchars($settings['hotline'] ?? ''); ?></p>
+                    </div>
                 </div>
             </div>
         </div>

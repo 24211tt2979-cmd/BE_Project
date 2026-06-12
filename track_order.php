@@ -136,31 +136,29 @@ include 'includes/header.php';
                         </div>
 
                         <?php
-                        /* ─────────────────────────────────────────────────────────────
-                         * ORDER TRACKING TIMELINE — Status Logic
-                         *
-                         * Map the actual DB status string to a numeric step (1–4).
-                         * Steps: 1=Chờ duyệt  2=Đã duyệt  3=Đang giao  4=Hoàn thành
-                         * Special: Đã hủy renders a cancelled state overlay.
-                         *
-                         * CSS rules applied per step:
-                         *   step index < $current_step  → class="completed"
-                         *   step index === $current_step → class="active"
-                         *   step index > $current_step  → (no extra class = pending/gray)
-                         * ───────────────────────────────────────────────────────────── */
-                        $raw_status    = $order['status'] ?? 'Chờ duyệt';
-                        $is_cancelled  = ($raw_status === 'Đã hủy');
+                    /* ─────────────────────────────────────────────────────────────
+                     * ORDER TRACKING TIMELINE — Status Logic
+                     *
+                     * Map the actual DB status string to a numeric step (1–3).
+                     * Steps: 1=Chờ xác nhận  2=Đang giao  3=Hoàn thành
+                     * Special: Đã hủy renders a cancelled state overlay.
+                     *
+                     * CSS rules applied per step:
+                     *   step index < $current_step  → class="completed"
+                     *   step index === $current_step → class="active"
+                     *   step index > $current_step  → (no extra class = pending/gray)
+                     * ───────────────────────────────────────────────────────────── */
+                    $raw_status    = $order['status'] ?? 'Chờ xác nhận';
+                    $is_cancelled  = ($raw_status === 'Đã hủy');
 
-                        switch ($raw_status) {
-                            case 'Đã duyệt':
-                            case 'Processing': $current_step = 2; break;
-                            case 'Đang giao':
-                            case 'Shipped':    $current_step = 3; break;
-                            case 'Hoàn thành':
-                            case 'Completed':  $current_step = 4; break;
-                            case 'Đã hủy':     $current_step = 0; break; // cancelled — no step active
-                            default:           $current_step = 1; break; // Chờ duyệt / Pending
-                        }
+                    switch ($raw_status) {
+                        case 'Đang giao':
+                        case 'Shipped':    $current_step = 2; break;
+                        case 'Hoàn thành':
+                        case 'Completed':  $current_step = 3; break;
+                        case 'Đã hủy':     $current_step = 0; break; // cancelled — no step active
+                        default:           $current_step = 1; break; // Chờ xác nhận / Pending
+                    }
 
                         /**
                          * Returns the CSS class string for a given step index.
@@ -190,9 +188,8 @@ include 'includes/header.php';
 
                         $steps = [
                             1 => ['title' => 'Chờ xác nhận', 'sub' => 'Đơn đã đặt',      'icon' => 'bi-bag-check'],
-                            2 => ['title' => 'Đã đóng gói',  'sub' => 'Chuẩn bị hàng',   'icon' => 'bi-box-seam'],
-                            3 => ['title' => 'Đang giao',    'sub' => 'Trên đường đến',   'icon' => 'bi-truck'],
-                            4 => ['title' => 'Hoàn thành',   'sub' => 'Đã nhận hàng',     'icon' => 'bi-house-check'],
+                            2 => ['title' => 'Đang giao',    'sub' => 'Trên đường đến',   'icon' => 'bi-truck'],
+                            3 => ['title' => 'Hoàn thành',   'sub' => 'Đã nhận hàng',     'icon' => 'bi-house-check'],
                         ];
                         ?>
 

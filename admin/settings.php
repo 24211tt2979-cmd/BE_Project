@@ -7,11 +7,13 @@ $basePath = "../";
 $uploadDir = '../assets/images/';
 
 if (isset($_POST['save_settings'])) {
-    $fields = ['store_name', 'hotline', 'store_email', 'store_address', 'map_embed_url'];
+    $fields = ['store_name', 'hotline', 'store_email', 'store_address', 'map_embed_url',
+        'home_best_selling_title', 'home_featured_title', 'home_for_you_title',
+        'home_featured_count', 'home_best_selling_count', 'home_for_you_count'];
     foreach ($fields as $field) {
         set_system_setting($pdo, $field, trim($_POST[$field] ?? ''));
     }
-    log_admin_action($pdo, 'UPDATE_SYSTEM_SETTINGS', 'Cập nhật hotline, địa chỉ, email và bản đồ');
+    log_admin_action($pdo, 'UPDATE_SYSTEM_SETTINGS', 'Cập nhật hotline, địa chỉ, email, bản đồ và cấu hình trang chủ');
     header("Location: settings.php?msg=settings");
     exit;
 }
@@ -77,7 +79,7 @@ include 'includes/admin_header.php';
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1 class="fw-bold h2 mb-1">Cấu hình hệ thống</h1>
-        <p class="text-secondary mb-0">Quản lý hotline, địa chỉ, bản đồ và banner trang chủ.</p>
+        <p class="text-secondary mb-0">Quản lý thông tin cửa hàng, banner và cấu hình các mục trên trang chủ.</p>
     </div>
 </div>
 
@@ -90,7 +92,7 @@ include 'includes/admin_header.php';
 
 <div class="row g-4">
     <div class="col-lg-5">
-        <div class="card border-0 shadow-sm rounded-4">
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
             <div class="card-body p-4">
                 <h5 class="fw-bold mb-4">Thông tin cửa hàng</h5>
                 <form method="POST">
@@ -113,6 +115,50 @@ include 'includes/admin_header.php';
                     <div class="mb-4">
                         <label class="form-label small fw-bold">Google Maps embed URL</label>
                         <input name="map_embed_url" class="form-control bg-light border-0" value="<?php echo htmlspecialchars($settings['map_embed_url'] ?? ''); ?>">
+                    </div>
+                    <button name="save_settings" class="btn btn-primary rounded-pill px-4 fw-bold">Lưu cấu hình</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-4"><i class="bi bi-layout-three-columns me-2 text-primary"></i>Cấu hình trang chủ</h5>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Tiêu đề mục "Sản phẩm nổi bật"</label>
+                        <input name="home_featured_title" class="form-control bg-light border-0" value="<?php echo htmlspecialchars($settings['home_featured_title'] ?? 'Đỉnh phẩm công nghệ mới.'); ?>">
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Số lượng SP nổi bật</label>
+                            <input type="number" name="home_featured_count" class="form-control bg-light border-0" value="<?php echo htmlspecialchars($settings['home_featured_count'] ?? '8'); ?>" min="1" max="20">
+                        </div>
+                        <div class="col-6 d-flex align-items-end">
+                            <a href="products.php" class="btn btn-outline-primary btn-sm rounded-pill w-100 fw-bold">
+                                <i class="bi bi-star me-1"></i>Quản lý SP nổi bật
+                            </a>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Tiêu đề mục "Sản phẩm bán chạy"</label>
+                        <input name="home_best_selling_title" class="form-control bg-light border-0" value="<?php echo htmlspecialchars($settings['home_best_selling_title'] ?? 'Sản phẩm bán chạy'); ?>">
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Số lượng SP bán chạy</label>
+                            <input type="number" name="home_best_selling_count" class="form-control bg-light border-0" value="<?php echo htmlspecialchars($settings['home_best_selling_count'] ?? '4'); ?>" min="1" max="20">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Tiêu đề mục "Gợi ý cho bạn"</label>
+                        <input name="home_for_you_title" class="form-control bg-light border-0" value="<?php echo htmlspecialchars($settings['home_for_you_title'] ?? 'Dành cho bạn.'); ?>">
+                    </div>
+                    <div class="row g-2 mb-4">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Số lượng SP gợi ý</label>
+                            <input type="number" name="home_for_you_count" class="form-control bg-light border-0" value="<?php echo htmlspecialchars($settings['home_for_you_count'] ?? '8'); ?>" min="1" max="20">
+                        </div>
                     </div>
                     <button name="save_settings" class="btn btn-primary rounded-pill px-4 fw-bold">Lưu cấu hình</button>
                 </form>

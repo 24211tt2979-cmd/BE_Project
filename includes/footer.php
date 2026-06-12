@@ -15,30 +15,24 @@ if (!isset($settings) && isset($pdo)) {
     }
     $settings = get_system_settings($pdo);
 }
-$_mapUrl     = $settings['map_embed_url']  ?? 'https://www.google.com/maps?q=Ho+Chi+Minh+City&output=embed';
 $_storeAddr  = $settings['store_address']  ?? '123 Đường Ba Tháng Hai, Quận 10, TP. Hồ Chí Minh';
 $_storeHotline = $settings['hotline']      ?? '1900 xxxx';
 $_storeEmail = $settings['store_email']    ?? 'support@nhkmobile.vn';
 ?>
-<!-- ===== MAP & CONTACT STRIP ===== -->
+<!-- ===== CONTACT STRIP ===== -->
 <section class="footer-map-strip">
     <div class="container-wide">
         <div class="fms-inner">
-            <!-- Left: Contact Info -->
             <div class="fms-info">
                 <h4 class="fms-heading"><i class="bi bi-shop"></i> NHK Mobile &mdash; Tìm chúng tôi</h4>
                 <div class="fms-cards">
-                    <a href="https://www.google.com/maps/search/?api=1&query=<?php echo urlencode($_storeAddr); ?>" 
-                       target="_blank" 
-                       class="fms-card text-decoration-none" 
-                       style="cursor: pointer;"
-                       title="Nhấp để xem chỉ đường trên Google Maps">
+                    <div class="fms-card">
                         <div class="fms-card-icon"><i class="bi bi-geo-alt-fill"></i></div>
                         <div>
-                            <div class="fms-card-label">Địa chỉ cửa hàng <i class="bi bi-box-arrow-up-right ms-1 text-muted" style="font-size: 9px;"></i></div>
+                            <div class="fms-card-label">Địa chỉ cửa hàng</div>
                             <div class="fms-card-value text-primary"><?php echo nl2br(htmlspecialchars($_storeAddr)); ?></div>
                         </div>
-                    </a>
+                    </div>
                     <div class="fms-card">
                         <div class="fms-card-icon"><i class="bi bi-telephone-fill"></i></div>
                         <div>
@@ -53,34 +47,13 @@ $_storeEmail = $settings['store_email']    ?? 'support@nhkmobile.vn';
                             <div class="fms-card-value"><?php echo htmlspecialchars($_storeEmail); ?></div>
                         </div>
                     </div>
-                    <a href="contact.php" class="fms-cta"><i class="bi bi-map"></i> Xem trang liên hệ đầy đủ</a>
                 </div>
-            </div>
-            <!-- Right: Google Map -->
-            <div class="fms-map">
-                <iframe
-                    src="<?php echo htmlspecialchars($_mapUrl); ?>"
-                    width="100%"
-                    height="100%"
-                    style="border:0; display:block;"
-                    allowfullscreen=""
-                    loading="lazy"
-                    referrerpolicy="no-referrer-when-downgrade"
-                    title="Bản đồ cửa hàng NHK Mobile"></iframe>
-                <!-- Link to open Google Maps directly -->
-                <a href="https://www.google.com/maps/search/?api=1&query=<?php echo urlencode($_storeAddr); ?>" 
-                   target="_blank" 
-                   class="btn btn-sm btn-light border shadow-sm px-3 py-2 rounded-pill position-absolute bottom-0 end-0 m-3 d-flex align-items-center gap-2" 
-                   style="z-index: 5; font-size: 13px; font-weight: 600; text-decoration: none; color: #1d1d1f;">
-                    <i class="bi bi-geo-alt-fill text-danger"></i> Xem bản đồ lớn
-                </a>
             </div>
         </div>
     </div>
 </section>
 
 <style>
-/* ── Footer Map Strip ── */
 .footer-map-strip {
     background: #fff;
     border-top: 1px solid var(--border-light);
@@ -88,12 +61,10 @@ $_storeEmail = $settings['store_email']    ?? 'support@nhkmobile.vn';
     margin-top: 0;
 }
 .fms-inner {
-    display: grid;
-    grid-template-columns: 1fr 1.4fr;
-    min-height: 260px;
+    min-height: 120px;
 }
 .fms-info {
-    padding: 36px 40px 36px 0;
+    padding: 36px 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -110,8 +81,8 @@ $_storeEmail = $settings['store_email']    ?? 'support@nhkmobile.vn';
 .fms-heading i { color: var(--primary); }
 .fms-cards {
     display: flex;
-    flex-direction: column;
-    gap: 14px;
+    flex-wrap: wrap;
+    gap: 20px 40px;
 }
 .fms-card {
     display: flex;
@@ -144,35 +115,6 @@ $_storeEmail = $settings['store_email']    ?? 'support@nhkmobile.vn';
     color: var(--text-main);
     line-height: 1.4;
 }
-.fms-cta {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--primary);
-    border: 1.5px solid var(--primary);
-    padding: 8px 18px;
-    border-radius: 40px;
-    width: fit-content;
-    transition: all 0.2s;
-}
-.fms-cta:hover {
-    background: var(--primary);
-    color: #fff;
-}
-.fms-map {
-    position: relative;
-    min-height: 260px;
-}
-.fms-map iframe {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-}
-/* Dark mode */
 body.dark-mode .footer-map-strip {
     background: #111;
     border-top-color: rgba(255,255,255,0.08);
@@ -182,18 +124,6 @@ body.dark-mode .fms-card-icon {
 }
 body.dark-mode .fms-card-value { color: #f0f0f0; }
 body.dark-mode .fms-heading { color: #f0f0f0; }
-/* Responsive */
-@media (max-width: 768px) {
-    .fms-inner {
-        grid-template-columns: 1fr;
-    }
-    .fms-info {
-        padding: 28px 0 20px;
-    }
-    .fms-map {
-        min-height: 220px;
-    }
-}
 </style>
 
 <footer class="footer-new bg-light mt-0 border-top">

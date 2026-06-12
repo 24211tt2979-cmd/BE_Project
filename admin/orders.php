@@ -23,7 +23,7 @@ if (isset($_POST['update_status'])) {
         
         if ($order && $order['status'] !== $newStatus) {
             $currentStatus = $order['status'];
-            $activeStatuses = ['Đã duyệt', 'Đang giao', 'Hoàn thành'];
+            $activeStatuses = ['Đang giao', 'Hoàn thành'];
             $isOldActive = in_array($currentStatus, $activeStatuses);
             $isNewActive = in_array($newStatus, $activeStatuses);
             
@@ -300,8 +300,7 @@ include 'includes/admin_header.php';
                 <div class="col-md-2">
                     <select name="status_filter" class="form-select bg-light border-0">
                         <option value="">Tất cả trạng thái</option>
-                        <option value="Chờ duyệt" <?php echo ($status_filter == 'Chờ duyệt') ? 'selected' : ''; ?>>Chờ duyệt</option>
-                        <option value="Đã duyệt" <?php echo ($status_filter == 'Đã duyệt') ? 'selected' : ''; ?>>Đã duyệt</option>
+                        <option value="Chờ xác nhận" <?php echo ($status_filter == 'Chờ xác nhận') ? 'selected' : ''; ?>>Chờ xác nhận</option>
                         <option value="Đang giao" <?php echo ($status_filter == 'Đang giao') ? 'selected' : ''; ?>>Đang giao</option>
                         <option value="Hoàn thành" <?php echo ($status_filter == 'Hoàn thành') ? 'selected' : ''; ?>>Hoàn thành</option>
                         <option value="Đã hủy" <?php echo ($status_filter == 'Đã hủy') ? 'selected' : ''; ?>>Đã hủy</option>
@@ -387,8 +386,7 @@ include 'includes/admin_header.php';
                                 <?php 
                                     $badgeClass = 'bg-warning text-dark';
                                     $s = mb_strtolower($o['status'], 'UTF-8');
-                                    if (str_contains($s, 'đã duyệt')) $badgeClass = 'bg-info text-white';
-                                    elseif (str_contains($s, 'đang giao')) $badgeClass = 'bg-primary text-white';
+                                    if (str_contains($s, 'đang giao')) $badgeClass = 'bg-primary text-white';
                                     elseif (str_contains($s, 'hoàn thành') || str_contains($s, 'completed')) $badgeClass = 'bg-success text-white';
                                     elseif (str_contains($s, 'hủy') || str_contains($s, 'cancel')) $badgeClass = 'bg-danger text-white';
                                 ?>
@@ -406,8 +404,7 @@ include 'includes/admin_header.php';
                                 <form action="orders.php" method="POST" class="d-inline-flex gap-2 align-items-center">
                                     <input type="hidden" name="id" value="<?php echo $o['id']; ?>">
                                     <select name="status" class="form-select form-select-sm border-secondary-subtle rounded-3" style="width: auto;" onchange="this.form.submit()">
-                                        <option value="Chờ duyệt" <?php if($o['status'] == 'Chờ duyệt') echo 'selected'; ?>>Chờ duyệt</option>
-                                        <option value="Đã duyệt" <?php if($o['status'] == 'Đã duyệt') echo 'selected'; ?>>Đã duyệt</option>
+                                        <option value="Chờ xác nhận" <?php if($o['status'] == 'Chờ xác nhận') echo 'selected'; ?>>Chờ xác nhận</option>
                                         <option value="Đang giao" <?php if($o['status'] == 'Đang giao') echo 'selected'; ?>>Đang giao</option>
                                         <option value="Hoàn thành" <?php if($o['status'] == 'Hoàn thành' || $o['status'] == 'Completed') echo 'selected'; ?>>Hoàn thành</option>
                                         <option value="Đã hủy" <?php if($o['status'] == 'Đã hủy') echo 'selected'; ?>>Đã hủy</option>

@@ -1,8 +1,8 @@
 <?php
 /**
- * NHK Mobile - PayOS VietQR Webhook Handler
+ * NHK Mobile - Giả lập Thanh toán Online Webhook Handler
  * 
- * Handles incoming payment notifications from PayOS for instant checkout fulfillment.
+ * Handles simulated payment notifications for instant checkout fulfillment.
  */
 header('Content-Type: application/json');
 require_once '../includes/db.php';
@@ -42,11 +42,11 @@ try {
         exit;
     }
     
-    $newStatus = 'Đã duyệt';
+    $newStatus = 'Hoàn thành';
     
     if ($order['status'] !== $newStatus) {
         $currentStatus = $order['status'];
-        $activeStatuses = ['Đã duyệt', 'Đang giao', 'Hoàn thành'];
+        $activeStatuses = ['Đang giao', 'Hoàn thành'];
         $isOldActive = in_array($currentStatus, $activeStatuses);
         
         // 1. KÍCH HOẠT KHO, BẢO HÀNH, LỢI NHUẬN
@@ -138,7 +138,7 @@ try {
         }
         
         // Ghi nhật ký hệ thống
-        log_admin_action($pdo, 'PAYOS_WEBHOOK', "Thanh toán thành công qua PayOS cho đơn hàng ID $orderId. Số tiền: " . $data['data']['amount'] . " VND.");
+        log_admin_action($pdo, 'SIMULATED_PAYMENT', "Thanh toán thành công (Giả lập Online) cho đơn hàng ID $orderId. Số tiền: " . $data['data']['amount'] . " VND.");
     } else {
         // Đơn đã duyệt sẵn, chỉ đánh dấu đã thanh toán
         $stmtUpdate = $pdo->prepare("UPDATE orders SET payment_status = 'Paid' WHERE id = ?");
@@ -151,6 +151,6 @@ try {
     if ($pdo && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    error_log("[PayOS Webhook] Error: " . $e->getMessage());
+    error_log("[Simulated Payment] Error: " . $e->getMessage());
     echo json_encode(['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()]);
 }

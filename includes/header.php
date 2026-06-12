@@ -958,7 +958,19 @@ if (isset($_SESSION['user_id']) && isset($pdo)) {
         }
 
         // Load mini cart on page load
-        document.addEventListener('DOMContentLoaded', loadMiniCart);
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMiniCart();
+
+            // Mobile search trigger -> open search overlay
+            var mobileSearch = document.getElementById('mobileSearchTrigger');
+            if (mobileSearch) {
+                mobileSearch.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var searchTrigger = document.getElementById('searchTrigger');
+                    if (searchTrigger) searchTrigger.click();
+                });
+            }
+        });
 
         // Dark Mode Functions
         function toggleDarkMode() {
@@ -1123,6 +1135,9 @@ if (isset($_SESSION['user_id']) && isset($pdo)) {
         <div class="offcanvas-body p-0">
             <div class="py-4">
                 <div class="list-group list-group-flush">
+                    <a href="#" id="mobileSearchTrigger" class="list-group-item list-group-item-action py-3 px-4 border-0 fw-bold d-flex align-items-center text-primary">
+                        <i class="bi bi-search me-3 fs-5"></i> Tìm kiếm
+                    </a>
                     <a href="<?php echo $basePath; ?>index.php" class="list-group-item list-group-item-action py-3 px-4 border-0 fw-bold d-flex align-items-center">
                         <i class="bi bi-house me-3 fs-5"></i> Trang chủ
                     </a>

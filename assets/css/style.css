@@ -1686,6 +1686,22 @@ body.dark-mode .hero-badge-secondary {
     letter-spacing: -0.02em;
 }
 
+.best-selling-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.2);
+    padding: 8px 20px;
+    border-radius: 40px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #FFD60A;
+    white-space: nowrap;
+}
+.best-selling-badge i {
+    animation: flash-pulse 1.5s ease-in-out infinite;
+}
+
 .flash-icon {
     font-size: 2.5rem;
     animation: flash-pulse 1s ease-in-out infinite;
