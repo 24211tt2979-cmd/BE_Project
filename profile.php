@@ -441,7 +441,7 @@ include 'includes/header.php';
                             <div>
                                 <label class="profile-label">Mật khẩu hiện tại *</label>
                                 <div class="position-relative">
-                                    <input type="password" name="current_password" id="curPw"
+                                    <input type="text" name="current_password" id="curPw"
                                            class="form-control profile-input pe-5" required placeholder="••••••••">
                                     <span class="position-absolute top-50 end-0 translate-middle-y pe-3 text-muted"
                                           style="cursor:pointer;" onclick="togglePw('curPw',this)">

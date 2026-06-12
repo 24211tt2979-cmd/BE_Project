@@ -247,8 +247,7 @@ body.dark-mode .fms-heading { color: #f0f0f0; }
         });
     </script>
 
-    <!-- Search Overlay -->
-    <?php include 'includes/search_overlay.php'; ?>
+    <!-- Search Overlay moved to header.php -->
 
     <!-- Scroll Progress Bar -->
     <div class="scroll-progress" id="scrollProgress"></div>

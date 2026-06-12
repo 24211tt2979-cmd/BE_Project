@@ -12,34 +12,16 @@ if (strlen($q) < 1) {
 try {
     $results = [];
 
-    $stmt = $pdo->prepare("
-        SELECT id, name, price, image, category, stock, 
-               CASE WHEN stock > 0 THEN 1 ELSE 0 END as in_stock
-        FROM products 
-        WHERE name LIKE ? OR category LIKE ? OR brand LIKE ?
-        ORDER BY 
-            CASE WHEN name LIKE ? THEN 0 ELSE 1 END,
-            stock DESC,
-            name ASC
-        LIMIT 8
-    ");
-    $likeQ = "%$q%";
-    $stmt->execute([$likeQ, $likeQ, $likeQ, $likeQ]);
+    // Lấy sản phẩm (Đã tối ưu cho MySQL)
+    $stmt = $pdo->prepare("SELECT id, name, price, image, category FROM products WHERE name LIKE ? OR category LIKE ? LIMIT 6");
+    $stmt->execute(["%$q%", "%$q%"]);
     $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($products as $item) {
-        $results[] = [
-            'id'             => $item['id'],
-            'name'           => $item['name'],
-            'price'          => $item['price'],
-            'formatted_price' => number_format($item['price'], 0, ',', '.') . '₫',
-            'image'          => $item['image'],
-            'category'       => $item['category'],
-            'stock'          => (int)$item['stock'],
-            'in_stock'       => (bool)$item['in_stock'],
-            'url'            => "product-detail.php?id=" . $item['id'],
-            'type'           => 'product'
-        ];
+        $item['formatted_price'] = number_format($item['price'], 0, ',', '.') . '₫';
+        $item['url'] = "product-detail.php?id=" . $item['id'];
+        $item['type'] = 'product';
+        $results[] = $item;
     }
 
     echo json_encode($results);

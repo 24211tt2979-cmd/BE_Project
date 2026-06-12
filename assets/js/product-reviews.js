@@ -163,11 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     : '<i class="bi bi-star text-muted" style="opacity:.3"></i> ';
             }
 
-            const verifiedBadge = r.verified_purchase
-                ? `<span class="ms-2 badge bg-success bg-opacity-10 text-success rounded-pill px-2 py-1" style="font-size:10px;">
-                       <i class="bi bi-patch-check-fill me-1"></i>Đã mua hàng
-                   </span>`
-                : '';
+            const verifiedBadge = '';
 
             const imagePart = r.image
                 ? `<div class="mt-3">

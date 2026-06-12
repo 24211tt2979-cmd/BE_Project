@@ -966,8 +966,20 @@ if (isset($_SESSION['user_id']) && isset($pdo)) {
             if (mobileSearch) {
                 mobileSearch.addEventListener('click', function(e) {
                     e.preventDefault();
+                    // Close mobile menu offcanvas first
+                    var mobileNav = document.getElementById('mobileNav');
+                    if (mobileNav) {
+                        var closeBtn = mobileNav.querySelector('.btn-close');
+                        if (closeBtn) {
+                            closeBtn.click();
+                        }
+                    }
                     var searchTrigger = document.getElementById('searchTrigger');
-                    if (searchTrigger) searchTrigger.click();
+                    if (searchTrigger) {
+                        setTimeout(function() {
+                            searchTrigger.click();
+                        }, 350); // wait for offcanvas transition to finish
+                    }
                 });
             }
         });
@@ -1044,7 +1056,10 @@ if (isset($_SESSION['user_id']) && isset($pdo)) {
             </ul>
 
             <div class="nav-actions">
-                <a href="#" id="searchTrigger" class="nav-icon d-none d-md-flex"><i class="bi bi-search"></i></a>
+                <div class="search-wrapper">
+                    <a href="#" id="searchTrigger" class="nav-icon d-none d-md-flex"><i class="bi bi-search"></i></a>
+                    <?php include 'includes/search_overlay.php'; ?>
+                </div>
                 <!-- Mini Cart Dropdown -->
                 <div class="mini-cart-wrapper">
                     <a href="<?php echo $basePath; ?>cart.php" class="nav-icon position-relative" id="cartNavIcon">
